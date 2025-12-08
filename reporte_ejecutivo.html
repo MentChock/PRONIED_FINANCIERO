@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Ejecutivo - PRONIED</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- VARIABLES DE SISTEMA --- */
+        :root {
+            --pronied-red: #D91023;
+            --minedu-blue: #002244;
+            --sidebar-width: 280px;
+            --sidebar-width-collapsed: 90px;
+            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background-color: #eef2f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            transition: width var(--transition);
+            z-index: 100;
+            color: white;
+            background-color: var(--minedu-blue);
+            background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2604&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: hard-light;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0, 34, 68, 0.9) 0%, rgba(0, 34, 68, 0.4) 50%, rgba(0, 34, 68, 0.9) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-width-collapsed);
+        }
+
+        /* --- LOGO --- */
+        .logo-area {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-left: 5px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .logo-box {
+            min-width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .logo-box::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background: var(--pronied-red);
+            border-radius: 50%;
+            border: 2px solid var(--minedu-blue);
+        }
+
+        .logo-text {
+            margin-left: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- NAVEGACIÓN --- */
+        .nav-menu {
+            list-style: none;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .nav-link i {
+            font-size: 22px;
+            min-width: 40px;
+            display: flex;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .link-text {
+            margin-left: 10px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar.collapsed .link-text {
+            opacity: 0;
+            width: 0;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .nav-item.active .nav-link {
+            background: var(--pronied-red);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(217, 16, 35, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: absolute;
+            left: 70px;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            background: #fff;
+            color: var(--minedu-blue);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: 0.2s;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed .nav-item:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+            left: 80px;
+        }
+
+        /* --- USER PROFILE --- */
+        .user-card {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .user-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .avatar-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            margin-left: 12px;
+            overflow: hidden;
+        }
+
+        .user-details h4 {
+            font-size: 0.9rem;
+            white-space: nowrap;
+            color: white;
+        }
+
+        .user-details span {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            display: block;
+            white-space: nowrap;
+            color: #ccc;
+        }
+
+        .sidebar.collapsed .user-details {
+            display: none;
+        }
+
+        .sidebar.collapsed .user-card {
+            justify-content: center;
+            background: transparent;
+            padding: 5px;
+            border: none;
+        }
+
+        /* --- BOTÓN DE COLAPSO (FLOTANTE) --- */
+        .collapse-btn {
+            position: absolute;
+            top: 42px;
+            right: -14px;
+            width: 28px;
+            height: 28px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 105;
+            transition: 0.3s;
+        }
+
+        .collapse-btn:hover {
+            color: var(--pronied-red);
+            transform: scale(1.1);
+        }
+
+        .sidebar.collapsed .collapse-btn {
+            transform: rotate(180deg);
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 0;
+            transition: margin-left var(--transition);
+            width: 100%;
+        }
+
+        .sidebar.collapsed~.main-content {
+            margin-left: var(--sidebar-width-collapsed);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="flex min-h-screen">
+        <!-- SIDEBAR -->
+        <nav class="sidebar" id="sidebar">
+            <button class="collapse-btn" onclick="toggleSidebar()">
+                <i class="ph-bold ph-caret-left"></i>
+            </button>
+
+            <div class="sidebar-content">
+                <div class="logo-area">
+                    <div class="logo-box">
+                        <i class="ph-fill ph-buildings"></i>
+                    </div>
+                    <div class="logo-text">PRONIED</div>
+                </div>
+
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/reporte" class="nav-link">
+                            <i class="ph ph-briefcase"></i>
+                            <span class="link-text">Reporte General</span>
+                        </a>
+                        <span class="tooltip">Reporte General</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/analisis-historico" class="nav-link">
+                            <i class="ph ph-clock-counter-clockwise"></i>
+                            <span class="link-text">Análisis Histórico</span>
+                        </a>
+                        <span class="tooltip">Análisis Histórico</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/dashboard_view" class="nav-link">
+                            <i class="ph ph-squares-four"></i>
+                            <span class="link-text">Predicción</span>
+                        </a>
+                        <span class="tooltip">Predicción</span>
+                    </li>
+
+                    <!--                    <li class="nav-item">
+                        <a href="/importacion" class="nav-link">
+                            <i class="ph ph-upload"></i>
+                            <span class="link-text">Importación</span>
+                        </a>
+                        <span class="tooltip">Importación</span>
+                    </li>
+                -->
+                    <li class="nav-item active">
+                        <a href="/reporte-ejecutivo" class="nav-link">
+                            <i class="ph ph-file-text"></i>
+                            <span class="link-text">Reporte</span>
+                        </a>
+                        <span class="tooltip">Reporte</span>
+                    </li>
+
+
+
+                    <li class="nav-item" style="margin-top:auto">
+                        <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
+                            <i class="ph ph-sign-out text-red-400"></i>
+                            <span class="link-text text-red-100">Cerrar Sesión</span>
+                        </a>
+                        <span class="tooltip">Cerrar Sesión</span>
+                    </li>
+                </ul>
+
+                <div class="user-card">
+                    <div class="avatar-circle">AD</div>
+                    <div class="user-details">
+                        <h4>Admin. General</h4>
+                        <span>Infraestructura</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content flex flex-col bg-gray-50">
+
+            <!-- HEADER -->
+            <header class="bg-white shadow-sm border-b border-gray-200 p-4 flex justify-between items-center z-40">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 lg:hidden">
+                        <i class="ph-bold ph-list text-2xl"></i>
+                    </button>
+                    <h1 class="text-xl font-bold text-gray-800">Bienvenido</h1>
+                </div>
+            </header>
+
+            <!-- CONTENT BODY -->
+            <main class="p-8 space-y-8 max-w-7xl mx-auto w-full">
+
+                <!-- BLUE BANNER -->
+                <div class="bg-blue-600 rounded-xl p-8 text-white shadow-lg relative overflow-hidden">
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="ph-bold ph-file-text text-2xl"></i>
+                            <h2 class="text-2xl font-bold">Generador de Reportes Ejecutivos</h2>
+                        </div>
+                        <p class="text-blue-100 mb-4">Genere reportes descargables en Excel con información detallada de
+                            proyectos</p>
+                        <div class="flex items-center gap-2 text-xs text-blue-200">
+                            <i class="ph-fill ph-clock"></i>
+                            <span>Actualizado: <span id="lastUpdateDate">Cargando...</span></span>
+                        </div>
+                    </div>
+                    <div
+                        class="absolute right-8 top-1/2 transform -translate-y-1/2 bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+                        <i class="ph-fill ph-file-xls text-4xl text-white"></i>
+                    </div>
+                </div>
+
+                <!-- FILTERS CARD -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center gap-2 mb-6 text-gray-700 font-bold border-b pb-2">
+                        <i class="ph-fill ph-funnel"></i>
+                        <h3>Filtros de Reporte</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <!-- Año -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Año</label>
+                            <div class="relative">
+                                <select id="filterAno"
+                                    class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 px-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none cursor-pointer hover:bg-gray-50">
+                                    <option value="2025">2025</option>
+                                    <option value="2024">2024</option>
+                                    <option value="Todos">Todos los Años</option>
+                                </select>
+                                <div
+                                    class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                    <i class="ph-bold ph-caret-down"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Unidad Gerencial -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Unidad Gerencial</label>
+                            <div class="relative">
+                                <select id="filterUnidad"
+                                    class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 px-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none cursor-pointer hover:bg-gray-50">
+                                    <option value="Todas">Todos los Rubros</option>
+                                    <!-- Options populated by JS -->
+                                </select>
+                                <div
+                                    class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                    <i class="ph-bold ph-caret-down"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mes -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Mes</label>
+                            <div class="relative">
+                                <select id="filterMes"
+                                    class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 px-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none cursor-pointer hover:bg-gray-50">
+                                    <option value="Todos">Todos los Meses</option>
+                                    <option value="enero">Enero</option>
+                                    <option value="febrero">Febrero</option>
+                                    <option value="marzo">Marzo</option>
+                                    <option value="abril">Abril</option>
+                                    <option value="mayo">Mayo</option>
+                                    <option value="junio">Junio</option>
+                                    <option value="julio">Julio</option>
+                                    <option value="agosto">Agosto</option>
+                                    <option value="setiembre">Setiembre</option>
+                                    <option value="octubre">Octubre</option>
+                                    <option value="noviembre">Noviembre</option>
+                                    <option value="diciembre">Diciembre</option>
+                                </select>
+                                <div
+                                    class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                    <i class="ph-bold ph-caret-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-4">
+                        <button onclick="generateReport()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-colors flex items-center gap-2">
+                            <i class="ph-bold ph-play"></i>
+                            Generar Reporte
+                        </button>
+                        <button onclick="downloadExcel()"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-colors flex items-center gap-2">
+                            <i class="ph-bold ph-download-simple"></i>
+                            Descargar Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SUMMARY SECTION -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2 text-gray-700 font-bold">
+                            <i class="ph-fill ph-file-text"></i>
+                            <h3>Resumen del Reporte</h3>
+                        </div>
+                        <span class="text-xs text-gray-500">Generado: <span id="generatedTime">--</span></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <!-- Total Registros -->
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold mb-1">Total de Registros</p>
+                                <p class="text-2xl font-bold text-blue-600" id="summaryCount">0</p>
+                            </div>
+                            <div
+                                class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                                <i class="ph-fill ph-folder"></i>
+                            </div>
+                        </div>
+
+                        <!-- Costo Total (PIM) -->
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold mb-1">Costo Total (PIM)</p>
+                                <p class="text-2xl font-bold text-green-600" id="summaryPim">S/ 0.00</p>
+                            </div>
+                            <div
+                                class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                                <i class="ph-bold ph-currency-dollar"></i>
+                            </div>
+                        </div>
+
+                        <!-- Devengado Total -->
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold mb-1">Devengado Total</p>
+                                <p class="text-2xl font-bold text-purple-600" id="summaryDevengado">S/ 0.00</p>
+                            </div>
+                            <div
+                                class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                                <i class="ph-bold ph-chart-line-up"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INFO BOX -->
+                    <div class="bg-blue-50 rounded-xl p-6 border border-blue-100 flex gap-4">
+                        <i class="ph-fill ph-info text-blue-500 text-xl mt-1"></i>
+                        <div class="text-sm text-gray-600 space-y-2">
+                            <h4 class="font-bold text-gray-800">Contenido del Reporte</h4>
+                            <ul class="list-disc pl-4 space-y-1">
+                                <li><b>Total de Registros:</b> Cantidad de proyectos que cumplen los filtros
+                                    seleccionados.</li>
+                                <li><b>Análisis Financiero:</b> Suma del PIM y Devengado según los criterios.</li>
+                                <li><b>Detalle de Proyectos:</b> Información completa de cada proyecto con todas las
+                                    métricas.</li>
+                            </ul>
+                            <p class="text-xs text-gray-500 mt-2">Nota: El archivo Excel se generará con 2 hojas:
+                                Resumen Ejecutivo y Detalle de Proyectos.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // --- SIDEBAR TOGGLE ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // --- LOGOUT ---
+        function logout() {
+            localStorage.removeItem('pronied_token');
+            window.location.href = '/';
+        }
+
+        // --- AUTH CHECK ---
+        const token = localStorage.getItem('pronied_token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        const API_URL = "/api";
+        const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Set current date
+            const now = new Date();
+            document.getElementById('lastUpdateDate').innerText = now.toLocaleString();
+            document.getElementById('generatedTime').innerText = now.toLocaleString();
+
+            // Load Filter Options (Regions, Units)
+            await loadFilterOptions();
+        });
+
+        async function loadFilterOptions() {
+            try {
+                // Reuse existing endpoint for filter data if possible, or create new one.
+                // For now, we'll fetch from /api/reporte-general-data to get lists
+                const response = await fetch(`${API_URL}/reporte-general-data?unidad=Todas&anio=2025`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                // Populate Regions (Provincias in previous context, but mapping to Region/Department here)
+                // Note: The user asked for "Region", which usually maps to Departamento.
+                // Let's assume we can get unique departments from a new endpoint or reuse logic.
+                // For simplicity in this step, I'll hardcode some or fetch if available.
+                // Ideally we should add an endpoint for unique departments.
+                // I will add a specific endpoint for filter options in backend step.
+
+                // For now, let's just populate Units from the existing data if available
+                const unitSelect = document.getElementById('filterUnidad');
+                // Clear existing options except first
+                unitSelect.innerHTML = '<option value="Todas">Todos los Rubros</option>';
+                // We can use the units from the response if they exist
+                // Or just hardcode the known ones for now: UGEO, UGM, UGME, UGRD, UGSC
+                ['UGEO', 'UGM', 'UGME', 'UGRD', 'UGSC'].forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u;
+                    opt.innerText = u;
+                    unitSelect.appendChild(opt);
+                });
+
+                // Populate Regions - Placeholder until backend endpoint is ready
+                const regionSelect = document.getElementById('filterRegion');
+                // We will populate this dynamically after backend update
+            } catch (error) {
+                console.error("Error loading filters:", error);
+            }
+        }
+
+        async function generateReport() {
+            const ano = document.getElementById('filterAno').value;
+            const unidad = document.getElementById('filterUnidad').value;
+            const mes = document.getElementById('filterMes').value;
+
+            try {
+                const response = await fetch(`${API_URL}/reporte-ejecutivo/resumen`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ano, unidad, mes })
+                });
+
+                if (!response.ok) throw new Error("Error al generar reporte");
+
+                const data = await response.json();
+
+                document.getElementById('summaryCount').innerText = data.total_registros;
+                document.getElementById('summaryPim').innerText = formatter.format(data.total_pim);
+                document.getElementById('summaryDevengado').innerText = formatter.format(data.total_devengado);
+                document.getElementById('generatedTime').innerText = new Date().toLocaleString();
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+
+        async function downloadExcel() {
+            const ano = document.getElementById('filterAno').value;
+            const unidad = document.getElementById('filterUnidad').value;
+            const mes = document.getElementById('filterMes').value;
+
+            try {
+                // Construct query params
+                const params = new URLSearchParams({
+                    ano: ano,
+                    unidad: unidad,
+                    mes: mes
+                });
+
+                const response = await fetch(`${API_URL}/reporte-ejecutivo/download?${params.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error("Error al descargar Excel");
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Reporte_Ejecutivo_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Histórico | PRONIED</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* --- VARIABLES DE SISTEMA --- */
+        :root {
+            --pronied-red: #D91023;
+            --minedu-blue: #002244;
+            --sidebar-width: 280px;
+            --sidebar-width-collapsed: 90px;
+            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background-color: #eef2f6;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            transition: width var(--transition);
+            z-index: 100;
+            color: white;
+            background-color: var(--minedu-blue);
+            background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2604&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: hard-light;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0, 34, 68, 0.9) 0%, rgba(0, 34, 68, 0.4) 50%, rgba(0, 34, 68, 0.9) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-width-collapsed);
+        }
+
+        /* --- LOGO --- */
+        .logo-area {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-left: 5px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .logo-box {
+            min-width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .logo-box::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background: var(--pronied-red);
+            border-radius: 50%;
+            border: 2px solid var(--minedu-blue);
+        }
+
+        .logo-text {
+            margin-left: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- NAVEGACIÓN --- */
+        .nav-menu {
+            list-style: none;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .nav-link i {
+            font-size: 22px;
+            min-width: 40px;
+            display: flex;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .link-text {
+            margin-left: 10px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar.collapsed .link-text {
+            opacity: 0;
+            width: 0;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .nav-item.active .nav-link {
+            background: var(--pronied-red);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(217, 16, 35, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: absolute;
+            left: 70px;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            background: #fff;
+            color: var(--minedu-blue);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: 0.2s;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed .nav-item:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+            left: 80px;
+        }
+
+        /* --- USER PROFILE --- */
+        .user-card {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .user-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .avatar-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            margin-left: 12px;
+            overflow: hidden;
+        }
+
+        .user-details h4 {
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .user-details span {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            display: block;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .user-details {
+            display: none;
+        }
+
+        .sidebar.collapsed .user-card {
+            justify-content: center;
+            background: transparent;
+            padding: 5px;
+            border: none;
+        }
+
+        /* --- BOTÓN DE COLAPSO (FLOTANTE) --- */
+        .collapse-btn {
+            position: absolute;
+            top: 42px;
+            right: -14px;
+            width: 28px;
+            height: 28px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 105;
+            transition: 0.3s;
+        }
+
+        .collapse-btn:hover {
+            color: var(--pronied-red);
+            transform: scale(1.1);
+        }
+
+        .sidebar.collapsed .collapse-btn {
+            transform: rotate(180deg);
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 0;
+            transition: margin-left var(--transition);
+            width: 100%;
+        }
+
+        .sidebar.collapsed~.main-content {
+            margin-left: var(--sidebar-width-collapsed);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- PROTECCIÓN DE RUTA -->
+    <script>
+        const token = localStorage.getItem('pronied_token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        function logout() {
+            localStorage.removeItem('pronied_token');
+            localStorage.removeItem('pronied_user');
+            window.location.href = '/';
+        }
+    </script>
+
+    <div class="flex min-h-screen">
+
+        <!-- SIDEBAR -->
+        <nav class="sidebar" id="sidebar">
+            <button class="collapse-btn" onclick="toggleSidebar()">
+                <i class="ph-bold ph-caret-left"></i>
+            </button>
+
+            <div class="sidebar-content">
+                <div class="logo-area">
+                    <div class="logo-box">
+                        <i class="ph-fill ph-buildings"></i>
+                    </div>
+                    <div class="logo-text">PRONIED</div>
+                </div>
+
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/reporte" class="nav-link">
+                            <i class="ph ph-briefcase"></i>
+                            <span class="link-text">Reporte General</span>
+                        </a>
+                        <span class="tooltip">Reporte General</span>
+                    </li>
+
+                    <li class="nav-item active">
+                        <a href="#" class="nav-link">
+                            <i class="ph ph-clock-counter-clockwise"></i>
+                            <span class="link-text">Análisis Histórico</span>
+                        </a>
+                        <span class="tooltip">Análisis Histórico</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/dashboard_view" class="nav-link">
+                            <i class="ph ph-squares-four"></i>
+                            <span class="link-text">Predicción</span>
+                        </a>
+                        <span class="tooltip">Predicción</span>
+                    </li>
+
+                    <!--                    <li class="nav-item">
+                        <a href="/importacion" class="nav-link">
+                            <i class="ph ph-upload"></i>
+                            <span class="link-text">Importación</span>
+                        </a>
+                        <span class="tooltip">Importación</span>
+                    </li>
+                -->
+                    <li class="nav-item">
+                        <a href="/reporte-ejecutivo" class="nav-link">
+                            <i class="ph ph-chart-bar"></i>
+                            <span class="link-text">Reporte</span>
+                        </a>
+                        <span class="tooltip">Reporte</span>
+                    </li>
+
+                    <li class="nav-item" style="margin-top:auto">
+                        <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
+                            <i class="ph ph-sign-out text-red-400"></i>
+                            <span class="link-text text-red-100">Cerrar Sesión</span>
+                        </a>
+                        <span class="tooltip">Cerrar Sesión</span>
+                    </li>
+                </ul>
+
+                <div class="user-card">
+                    <div class="avatar-circle">AD</div>
+                    <div class="user-details">
+                        <h4>Admin. General</h4>
+                        <span>Infraestructura</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="main-content flex flex-col bg-gray-100">
+
+            <!-- TOP HEADER -->
+            <header class="bg-white shadow p-4 flex justify-between items-center z-40">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">Ejecución Financiera</h1>
+                    <p class="text-xs text-gray-500">Análisis Histórico</p>
+                </div>
+                <div class="flex gap-4 items-center">
+                    <!-- Botón eliminado -->
+                </div>
+            </header>
+
+            <!-- CONTENIDO SCROLLABLE -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 space-y-6">
+
+                <!-- SECCIÓN: ANÁLISIS HISTÓRICO -->
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <i class="ph-bold ph-clock-counter-clockwise text-indigo-600"></i>
+                        Análisis Histórico de Eficiencia
+                    </h2>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Evaluación retrospectiva del gasto (2020-2024) para identificar patrones y brechas.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 1. GRÁFICO TENDENCIA -->
+                    <div class="lg:col-span-2 card p-6 flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">Evolución de Ejecución Presupuestal</h3>
+                                <p class="text-xs text-gray-500">Comparativo PIM vs. Devengado (Millones S/)</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 relative min-h-[320px]">
+                            <canvas id="chartHistorico"></canvas>
+                        </div>
+
+                    </div>
+
+                    <!-- 2. HEATMAP ESTACIONALIDAD -->
+                    <div class="lg:col-span-1 card p-6 flex flex-col">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-bold text-gray-900">Estacionalidad del Gasto</h3>
+                            <p class="text-xs text-gray-500">¿En qué meses solemos gastar más?</p>
+                        </div>
+                        <div class="flex-1 overflow-y-auto pr-2">
+                            <div class="grid grid-cols-2 gap-3" id="seasonalityGrid">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                                <i class="ph-fill ph-warning text-red-500"></i>
+                                <span>Alerta de Patrón:</span>
+                            </div>
+                            <p class="text-xs text-gray-600 italic" id="seasonalityAlert">
+                                "Calculando patrón histórico..."
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 3. RANKING REGIONAL -->
+                    <div class="lg:col-span-3 card p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <i class="ph-fill ph-map-pin text-gray-500"></i>
+                                Ranking Histórico de Eficiencia
+                            </h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-gray-500 uppercase bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 font-semibold">Unidad Gerencial</th>
+                                        <th class="px-6 py-3 font-semibold">Eficacia Promedio</th>
+                                        <th class="px-6 py-3 font-semibold">Barra de Rendimiento</th>
+                                        <th class="px-6 py-3 font-semibold text-center">Tendencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100" id="rankingTableBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // Init
+        loadHistoricalData();
+
+        async function loadHistoricalData() {
+            try {
+                const response = await fetch('/api/historical-analysis', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.status === 401) return;
+
+                const data = await response.json();
+                renderHistoricalSection(data);
+            } catch (error) {
+                console.error("Error loading historical data:", error);
+            }
+        }
+
+        function renderHistoricalSection(data) {
+            const { historical, seasonality, ranking } = data;
+
+            // 1. Chart
+            const ctx = document.getElementById('chartHistorico').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: historical.map(d => d.anio),
+                    datasets: [
+                        {
+                            label: 'PIM',
+                            data: historical.map(d => d.pim),
+                            backgroundColor: '#e5e7eb',
+                            order: 2,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Devengado',
+                            data: historical.map(d => d.devengado),
+                            backgroundColor: '#4f46e5',
+                            order: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '% Eficacia',
+                            data: historical.map(d => d.eficacia),
+                            borderColor: '#f97316',
+                            backgroundColor: '#f97316',
+                            type: 'line',
+                            order: 0,
+                            yAxisID: 'y1',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: { callback: (val) => 'S/ ' + (val / 1000000).toFixed(1) + 'M' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { callback: (val) => val + '%' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+
+            // 2. Heatmap
+            const grid = document.getElementById('seasonalityGrid');
+            grid.innerHTML = ''; // Clear loading state
+            seasonality.forEach(item => {
+                let colorClass = 'bg-gray-100';
+                if (item.intensidad === 'baja') colorClass = 'bg-red-100 text-red-700 border-red-200';
+                if (item.intensidad === 'media') colorClass = 'bg-yellow-50 text-yellow-700 border-yellow-200';
+                if (item.intensidad === 'alta') colorClass = 'bg-green-50 text-green-700 border-green-200';
+                if (item.intensidad === 'muy-alta') colorClass = 'bg-green-100 text-green-800 border-green-300 font-bold';
+
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-lg border ${colorClass} flex flex-col items-center justify-center transition-transform hover:scale-105`;
+                div.innerHTML = `
+                    <span class="text-xs uppercase tracking-wide opacity-70 mb-1">${item.mes}</span>
+                    <span class="text-xl font-bold">${item.promedio}%</span>
+                `;
+                grid.appendChild(div);
+            });
+
+            // Calculate Q1 (Jan+Feb+Mar)
+            const q1Sum = seasonality
+                .filter(s => ['Ene', 'Feb', 'Mar'].includes(s.mes))
+                .reduce((sum, item) => sum + item.promedio, 0);
+
+            const alertText = document.getElementById('seasonalityAlert');
+            if (alertText) {
+                alertText.innerHTML = `"El Primer Trimestre (Ene-Mar) históricamente ejecuta solo el <strong>${q1Sum.toFixed(1)}%</strong> del presupuesto anual."`;
+            }
+
+            // 3. Table
+            const tbody = document.getElementById('rankingTableBody');
+            tbody.innerHTML = ''; // Clear loading state
+            ranking.forEach(item => {
+                let barColor, trendBadge;
+
+                if (item.eficacia_promedio > 90) {
+                    barColor = 'bg-green-500';
+                    trendBadge = '<span class="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold">↗ Mejora</span>';
+                } else if (item.eficacia_promedio > 80) {
+                    barColor = 'bg-gray-400';
+                    trendBadge = '<span class="text-gray-600 bg-gray-100 px-2 py-1 rounded text-xs font-bold">→ Estable</span>';
+                } else {
+                    barColor = 'bg-red-500';
+                    trendBadge = '<span class="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold">↘ Caída</span>';
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-900">${item.unidad}</td>
+                    <td class="px-6 py-4 font-bold text-gray-700">${item.eficacia_promedio}%</td>
+                    <td class="px-6 py-4 w-1/3">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full ${barColor}" style="width: ${item.eficacia_promedio}%"></div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">${trendBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+
+</html>

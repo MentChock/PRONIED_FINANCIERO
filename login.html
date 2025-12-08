@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso al Sistema | PRONIED (Actualizado)</title>
+    <!-- Fuente oficial o similar (Roboto/Segoe UI) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- VARIABLES DE MARCA --- */
+        :root {
+            --pronied-red: #D91023;
+            --pronied-hover: #b00d1c;
+            --minedu-blue: #003366;
+            /* Azul institucional complementario */
+            --bg-input: #f0f2f5;
+            --text-main: #333;
+            --text-light: #666;
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- IZQUIERDA: IMAGEN INMERSIVA (70% ancho) --- */
+        .image-side {
+            flex: 2.5;
+            /* Ocupa más espacio */
+            position: relative;
+            background-image: url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=2531&auto=format&fit=crop');
+            /* Foto de arquitectura/construcción */
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            color: white;
+
+            /* Overlay oscuro para que el texto sea legible si lo hubiera */
+            box-shadow: inset -50px 0 100px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Capa de color roja semitransparente para dar identidad (opcional) */
+        .image-side::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1));
+        }
+
+        /* Texto sobre la imagen (opcional) */
+        .image-caption {
+            position: relative;
+            z-index: 2;
+            padding: 40px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+        }
+
+        .image-caption h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .image-caption p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+
+        /* --- DERECHA: FORMULARIO (30% ancho) --- */
+        .login-side {
+            flex: 1;
+            /* Ancho fijo relativo */
+            min-width: 400px;
+            /* Ancho mínimo para legibilidad */
+            background: white;
+            display: flex;
+            flex-direction: column;
+            padding: 40px;
+            justify-content: space-between;
+            /* Distribuye espacio entre logo, form y footer */
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        /* Header del lado derecho */
+        .login-header {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Logo Simulado CSS (Reemplazar por <img src="..." />) */
+        .logo-container {
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .logo-text {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--minedu-blue);
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .logo-subtitle {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-light);
+            margin-top: 5px;
+            border-top: 1px solid #ddd;
+            padding-top: 5px;
+            display: block;
+        }
+
+        /* Formulario */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: -180px;
+            /* Ajuste visual para centrar */
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-light);
+            margin-left: 2px;
+        }
+
+        .input-field {
+            padding: 12px 15px;
+            background-color: var(--bg-input);
+            border: 1px solid transparent;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            color: var(--text-main);
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            background-color: white;
+            border-color: var(--pronied-red);
+            /* Foco rojo PRONIED */
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(217, 16, 35, 0.1);
+        }
+
+        /* Botones idénticos a la referencia */
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 50px;
+            /* Bordes redondeados como la imagen */
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--minedu-blue);
+            /* Azul oscuro (Institucional) */
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 51, 102, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: #002244;
+        }
+
+        .btn-secondary {
+            background-color: var(--pronied-red);
+            /* Rojo PRONIED */
+            color: white;
+            box-shadow: 0 4px 10px rgba(217, 16, 35, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--pronied-hover);
+        }
+
+        .divider {
+            text-align: center;
+            color: #aaa;
+            font-size: 0.8rem;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #eee;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        .register-link {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 10px;
+        }
+
+        .register-link a {
+            color: var(--pronied-red);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer del panel derecho */
+        .login-footer {
+            font-size: 0.75rem;
+            color: #999;
+            text-align: center;
+        }
+
+        .lang-select {
+            display: block;
+            margin: 10px auto 0;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            color: #666;
+            font-size: 0.75rem;
+            background: transparent;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 900px) {
+            .image-side {
+                display: none;
+            }
+
+            /* Ocultar imagen en móviles */
+            .login-side {
+                flex: 1;
+                width: 100%;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LADO IZQUIERDO: IMAGEN INMERSIVA -->
+    <div class="image-side">
+        <div class="image-caption">
+            <h2>Construyendo educación</h2>
+            <p>Sistema de Gestión de Infraestructura Educativa</p>
+        </div>
+    </div>
+
+    <!-- LADO DERECHO: PANEL DE ACCESO -->
+    <div class="login-side">
+
+        <!-- Header con Logo -->
+        <div class="login-header">
+            <div class="logo-container">
+                <!-- Logo tipográfico para el ejemplo (reemplazable por SVG/IMG) -->
+                <div class="logo-text">PRONIED</div>
+                <span class="logo-subtitle">Programa Nacional de Infraestructura Educativa</span>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="login-form">
+            <div class="input-group">
+                <label class="input-label">Usuario</label>
+                <input type="text" class="input-field" placeholder="Ingrese su usuario o DNI">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Contraseña</label>
+                <input type="password" class="input-field" placeholder="••••••••">
+            </div>
+
+            <!-- Botón Principal (Azul como en tu imagen referencia, o Rojo oficial) -->
+            <!-- Usamos Azul MinEdu como primario para variar, o el Rojo PRONIED -->
+            <button class="btn btn-primary">
+                Acceder al Sistema
+            </button>
+
+            <div class="divider">o</div>
+
+            <!-- Botón Secundario (Rojo PRONIED) -->
+            <button class="btn btn-secondary">
+                Restablecer Credenciales
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <div class="login-footer">
+            <p>Versión 3.5.0 | © 2025 Ministerio de Educación</p>
+            <p>Unidad de Tecnologías de la Información</p>
+
+        </div>
+    </div>
+
+    <!-- Lógica de Login -->
+    <script>
+        document.querySelector('.btn-primary').addEventListener('click', async () => {
+            const usuarioInput = document.querySelector('input[type="text"]');
+            const passwordInput = document.querySelector('input[type="password"]');
+
+            const username = usuarioInput.value;
+            const password = passwordInput.value;
+
+            if (!username || !password) {
+                alert("Por favor ingrese usuario y contraseña");
+                return;
+            }
+
+            // Preparar datos para OAuth2 (form-data)
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            try {
+                const response = await fetch('/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Guardar token
+                    localStorage.setItem('pronied_token', data.access_token);
+                    localStorage.setItem('pronied_user', username);
+
+                    // Redirigir al Dashboard
+                    console.log("Redirigiendo a /reporte...");
+                    window.location.href = '/reporte';
+                } else {
+                    alert("Usuario o contraseña incorrectos");
+                }
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                alert("Error al conectar con el servidor");
+            }
+        });
+    </script>
+</body>
+
+</html>

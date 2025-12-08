@@ -1,0 +1,241 @@
+import React, { useState } from 'react';
+import {
+BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+Line, ComposedChart, Cell
+} from 'recharts';
+import {
+Calendar, TrendingUp, History, AlertTriangle,
+Filter, Download, ChevronDown, Map
+} from 'lucide-react';
+
+// --- DATOS SIMULADOS (HISTÓRICOS 2020-2024) ---
+const historicalData = [
+{ anio: '2020', pim: 12000000, devengado: 9500000, eficacia: 79.1 },
+{ anio: '2021', pim: 13500000, devengado: 11200000, eficacia: 82.9 },
+{ anio: '2022', pim: 14000000, devengado: 10800000, eficacia: 77.1 },
+{ anio: '2023', pim: 15200000, devengado: 13800000, eficacia: 90.7 },
+{ anio: '2024', pim: 15000000, devengado: 12500000, eficacia: 83.3 },
+];
+
+// Datos de estacionalidad (Promedio de ejecución por mes en los últimos 5 años)
+const seasonalityData = [
+{ mes: 'Ene', promedio: 2.5, intensidad: 'baja' },
+{ mes: 'Feb', promedio: 4.1, intensidad: 'baja' },
+{ mes: 'Mar', promedio: 6.8, intensidad: 'media' },
+{ mes: 'Abr', promedio: 7.2, intensidad: 'media' },
+{ mes: 'May', promedio: 8.5, intensidad: 'media' },
+{ mes: 'Jun', promedio: 9.1, intensidad: 'alta' },
+{ mes: 'Jul', promedio: 10.5, intensidad: 'alta' },
+{ mes: 'Ago', promedio: 8.2, intensidad: 'media' },
+{ mes: 'Sep', promedio: 7.8, intensidad: 'media' },
+{ mes: 'Oct', promedio: 11.2, intensidad: 'alta' },
+{ mes: 'Nov', promedio: 12.5, intensidad: 'muy-alta' },
+{ mes: 'Dic', promedio: 11.6, intensidad: 'muy-alta' },
+];
+
+// Datos comparativos por región (Top y Bottom)
+const regionalRanking = [
+{ region: 'CUSCO', eficacia_promedio: 94.5, tendencia: 'up' },
+{ region: 'AREQUIPA', eficacia_promedio: 92.1, tendencia: 'up' },
+{ region: 'LIMA METRO', eficacia_promedio: 88.4, tendencia: 'stable' },
+{ region: 'PIURA', eficacia_promedio: 76.2, tendencia: 'down' },
+{ region: 'LORETO', eficacia_promedio: 68.5, tendencia: 'down' },
+];
+
+const HistoricalAnalysis = () => {
+const [selectedRegion, setSelectedRegion] = useState('Todas');
+
+// Función para asignar color al heatmap mensual
+const getHeatmapColor = (intensidad) => {
+switch(intensidad) {
+case 'baja': return 'bg-red-100 text-red-700 border-red-200';
+case 'media': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+case 'alta': return 'bg-green-50 text-green-700 border-green-200';
+case 'muy-alta': return 'bg-green-100 text-green-800 border-green-300 font-bold';
+default: return 'bg-gray-100';
+}
+};
+
+return (
+<div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-800">
+
+    {/* HEADER DE LA SECCIÓN */}
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <History className="w-6 h-6 text-indigo-600" />
+                Análisis Histórico de Eficiencia
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+                Evaluación retrospectiva del gasto (2020-2024) para identificar patrones y brechas.
+            </p>
+        </div>
+
+        <div className="flex gap-3">
+            <div className="relative">
+                <select
+                    className="appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-4 pr-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    value={selectedRegion} onChange={(e)=> setSelectedRegion(e.target.value)}
+                    >
+                    <option value="Todas">Todas las Regiones</option>
+                    <option value="UGEO">Unidad Gerencial de Estudios</option>
+                    <option value="UGME">Unidad de Mantenimiento</option>
+                </select>
+                <ChevronDown
+                    className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            <button
+                className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-lg font-medium hover:bg-indigo-100 transition-colors border border-indigo-200">
+                <Download className="w-4 h-4" /> Exportar Informe
+            </button>
+        </div>
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* 1. GRÁFICO PRINCIPAL: TENDENCIA MULTIANUAL */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h3 className="text-lg font-bold text-gray-900">Evolución de Ejecución Presupuestal</h3>
+                    <p className="text-xs text-gray-500">Comparativo PIM vs. Devengado (Millones S/)</p>
+                </div>
+                <div className="flex items-center gap-4 text-xs font-medium">
+                    <span className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-gray-300 rounded-sm"></div> PIM (Techo)
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-indigo-600 rounded-sm"></div> Devengado
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div> % Eficiencia
+                    </span>
+                </div>
+            </div>
+
+            <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={historicalData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                        <CartesianGrid stroke="#f3f4f6" vertical={false} />
+                        <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{fill: '#6b7280' }} />
+                        <YAxis yAxisId="left" orientation="left" stroke="#9ca3af" tickFormatter={(val)=> `S/
+                            ${val/1000000}M`} axisLine={false} tickLine={false} />
+                            <YAxis yAxisId="right" orientation="right" stroke="#f97316" unit="%" axisLine={false}
+                                tickLine={false} domain={[0, 100]} />
+                            <Tooltip contentStyle={{ borderRadius: '8px' , border: 'none' ,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={(value, name)=> {
+                                if (name === 'eficacia') return [`${value}%`, '% Eficiencia'];
+                                return [`S/ ${(value).toLocaleString('es-PE')}`, name === 'pim' ? 'Presupuesto (PIM)' :
+                                'Ejecutado'];
+                                }}
+                                />
+                                <Bar yAxisId="left" dataKey="pim" fill="#e5e7eb" radius={[4, 4, 0, 0]} barSize={40} />
+                                <Bar yAxisId="left" dataKey="devengado" fill="#4f46e5" radius={[4, 4, 0, 0]}
+                                    barSize={40} />
+                                <Line yAxisId="right" type="monotone" dataKey="eficacia" stroke="#f97316"
+                                    strokeWidth={3} dot={{r: 4, fill: '#f97316' , stroke: '#fff' , strokeWidth: 2}} />
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+
+            <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-100 flex items-start gap-3">
+                <TrendingUp className="w-5 h-5 text-orange-600 mt-0.5" />
+                <div>
+                    <h4 className="text-sm font-bold text-orange-800">Insight Histórico</h4>
+                    <p className="text-xs text-orange-700 mt-1">
+                        La tendencia muestra una mejora constante hasta 2023 (90.7%), pero una caída en 2024.
+                        Históricamente, los años de cambio de gestión (como 2022) presentan caídas del ~5% en la
+                        ejecución.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {/* 2. HEATMAP DE ESTACIONALIDAD (IDENTIFICACIÓN DE PATRONES) */}
+        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+            <div className="mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Estacionalidad del Gasto</h3>
+                <p className="text-xs text-gray-500">¿En qué meses solemos gastar más?</p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2">
+                <div className="grid grid-cols-2 gap-3">
+                    {seasonalityData.map((item) => (
+                    <div key={item.mes} className={`p-3 rounded-lg border ${getHeatmapColor(item.intensidad)} flex
+                        flex-col items-center justify-center transition-transform hover:scale-105`}>
+                        <span className="text-xs uppercase tracking-wide opacity-70 mb-1">{item.mes}</span>
+                        <span className="text-xl font-bold">{item.promedio}%</span>
+                    </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <span>Alerta de Patrón:</span>
+                </div>
+                <p className="text-xs text-gray-600 italic">
+                    "El Primer Trimestre (Ene-Mar) históricamente ejecuta solo el 13.4% del presupuesto anual. Se
+                    recomienda anticipar procesos en el año previo."
+                </p>
+            </div>
+        </div>
+
+        {/* 3. RANKING DE EFICIENCIA POR REGIÓN */}
+        <div className="lg:col-span-3 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Map className="w-5 h-5 text-gray-500" />
+                    Ranking Histórico de Eficiencia (Promedio 5 años)
+                </h3>
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 font-semibold">Región</th>
+                            <th className="px-6 py-3 font-semibold">Eficacia Promedio</th>
+                            <th className="px-6 py-3 font-semibold">Barra de Rendimiento</th>
+                            <th className="px-6 py-3 font-semibold text-center">Tendencia</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {regionalRanking.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 font-medium text-gray-900">{item.region}</td>
+                            <td className="px-6 py-4 font-bold text-gray-700">{item.eficacia_promedio}%</td>
+                            <td className="px-6 py-4 w-1/3">
+                                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div className={`h-2.5 rounded-full ${item.eficacia_promedio> 90 ? 'bg-green-500' :
+                                        item.eficacia_promedio > 80 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                        style={{ width: `${item.eficacia_promedio}%` }}
+                                        ></div>
+                                </div>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                                {item.tendencia === 'up' && <span
+                                    className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold">↗
+                                    Mejora</span>}
+                                {item.tendencia === 'stable' && <span
+                                    className="text-gray-600 bg-gray-100 px-2 py-1 rounded text-xs font-bold">→
+                                    Estable</span>}
+                                {item.tendencia === 'down' && <span
+                                    className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold">↘
+                                    Caída</span>}
+                            </td>
+                        </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+);
+};
+
+export default HistoricalAnalysis;

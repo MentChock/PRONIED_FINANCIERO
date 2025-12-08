@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte General | PRONIED</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* --- VARIABLES DE SISTEMA --- */
+        :root {
+            --pronied-red: #D91023;
+            --minedu-blue: #002244;
+            --sidebar-width: 280px;
+            --sidebar-width-collapsed: 90px;
+            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background-color: #eef2f6;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            transition: width var(--transition);
+            z-index: 100;
+            color: white;
+            background-color: var(--minedu-blue);
+            background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2604&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: hard-light;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0, 34, 68, 0.9) 0%, rgba(0, 34, 68, 0.4) 50%, rgba(0, 34, 68, 0.9) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-width-collapsed);
+        }
+
+        /* --- LOGO --- */
+        .logo-area {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-left: 5px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .logo-box {
+            min-width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .logo-box::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background: var(--pronied-red);
+            border-radius: 50%;
+            border: 2px solid var(--minedu-blue);
+        }
+
+        .logo-text {
+            margin-left: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- NAVEGACIÓN --- */
+        .nav-menu {
+            list-style: none;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .nav-link i {
+            font-size: 22px;
+            min-width: 40px;
+            display: flex;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .link-text {
+            margin-left: 10px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar.collapsed .link-text {
+            opacity: 0;
+            width: 0;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .nav-item.active .nav-link {
+            background: var(--pronied-red);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(217, 16, 35, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: absolute;
+            left: 70px;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            background: #fff;
+            color: var(--minedu-blue);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: 0.2s;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed .nav-item:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+            left: 80px;
+        }
+
+        /* --- USER PROFILE --- */
+        .user-card {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .user-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .avatar-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            margin-left: 12px;
+            overflow: hidden;
+        }
+
+        .user-details h4 {
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .user-details span {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            display: block;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .user-details {
+            display: none;
+        }
+
+        .sidebar.collapsed .user-card {
+            justify-content: center;
+            background: transparent;
+            padding: 5px;
+            border: none;
+        }
+
+        /* --- BOTÓN DE COLAPSO (FLOTANTE) --- */
+        .collapse-btn {
+            position: absolute;
+            top: 42px;
+            right: -14px;
+            width: 28px;
+            height: 28px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 105;
+            transition: 0.3s;
+        }
+
+        .collapse-btn:hover {
+            color: var(--pronied-red);
+            transform: scale(1.1);
+        }
+
+        .sidebar.collapsed .collapse-btn {
+            transform: rotate(180deg);
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 0;
+            transition: margin-left var(--transition);
+            width: 100%;
+        }
+
+        .sidebar.collapsed~.main-content {
+            margin-left: var(--sidebar-width-collapsed);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- PROTECCIÓN DE RUTA -->
+    <script>
+        const token = localStorage.getItem('pronied_token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        function logout() {
+            localStorage.removeItem('pronied_token');
+            localStorage.removeItem('pronied_user');
+            window.location.href = '/';
+        }
+    </script>
+
+    <div class="flex min-h-screen">
+
+        <!-- SIDEBAR -->
+        <nav class="sidebar" id="sidebar">
+            <button class="collapse-btn" onclick="toggleSidebar()">
+                <i class="ph-bold ph-caret-left"></i>
+            </button>
+
+            <div class="sidebar-content">
+                <div class="logo-area">
+                    <div class="logo-box">
+                        <i class="ph-fill ph-buildings"></i>
+                    </div>
+                    <div class="logo-text">PRONIED</div>
+                </div>
+
+                <ul class="nav-menu">
+                    <li class="nav-item active">
+                        <a href="#" class="nav-link">
+                            <i class="ph ph-briefcase"></i>
+                            <span class="link-text">Reporte General</span>
+                        </a>
+                        <span class="tooltip">Reporte General</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/analisis-historico" class="nav-link">
+                            <i class="ph ph-clock-counter-clockwise"></i>
+                            <span class="link-text">Análisis Histórico</span>
+                        </a>
+                        <span class="tooltip">Análisis Histórico</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/dashboard_view" class="nav-link">
+                            <i class="ph ph-squares-four"></i>
+                            <span class="link-text">Predicción</span>
+                        </a>
+                        <span class="tooltip">Predicción</span>
+                    </li>
+
+                    <!--                   <li class="nav-item">
+                        <a href="/importacion" class="nav-link">
+                            <i class="ph ph-upload"></i>
+                            <span class="link-text">Importación</span>
+                        </a>
+                        <span class="tooltip">Importación</span>
+                    </li>
+                -->
+                    <li class="nav-item">
+                        <a href="/reporte-ejecutivo" class="nav-link">
+                            <i class="ph ph-chart-bar"></i>
+                            <span class="link-text">Reporte</span>
+                        </a>
+                        <span class="tooltip">Reporte</span>
+                    </li>
+
+                    <li class="nav-item" style="margin-top:auto">
+                        <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
+                            <i class="ph ph-sign-out text-red-400"></i>
+                            <span class="link-text text-red-100">Cerrar Sesión</span>
+                        </a>
+                        <span class="tooltip">Cerrar Sesión</span>
+                    </li>
+                </ul>
+
+                <div class="user-card">
+                    <div class="avatar-circle">AD</div>
+                    <div class="user-details">
+                        <h4>Admin. General</h4>
+                        <span>Infraestructura</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="main-content flex flex-col bg-gray-100">
+
+            <!-- TOP HEADER -->
+            <header class="bg-white shadow p-4 flex justify-between items-center z-40">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">Ejecución Financiera</h1>
+                    <p class="text-xs text-gray-500">Reporte General</p>
+                </div>
+                <div class="flex gap-4 items-center">
+                    <!-- Indicador de última actualización -->
+                    <div id="lastUpdateBadge"
+                        class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium border border-indigo-100 transition-all duration-300">
+                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                        <span id="lastUpdateText">Actualizando...</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- CONTENIDO SCROLLABLE -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 space-y-6">
+
+                <!-- FILTROS -->
+                <!-- FILTROS -->
+                <div class="card p-6">
+                    <div class="flex flex-col md:flex-row md:items-center gap-6">
+                        <div class="flex items-center gap-2 text-gray-700 font-bold min-w-max">
+                            <i class="ph-fill ph-funnel text-xl"></i>
+                            <h3 class="text-lg">Filtros</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+                            <!-- Año (Primero) -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Año</label>
+                                <div class="relative">
+                                    <select id="filterAnio"
+                                        class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 px-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer hover:bg-gray-50">
+                                        <option value="2025">2025</option>
+                                    </select>
+                                    <div
+                                        class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                        <i class="ph-bold ph-caret-down"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Unidad Gerencial (Segundo) -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Unidad Gerencial</label>
+                                <div class="relative">
+                                    <select id="filterUnidad"
+                                        class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 px-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer hover:bg-gray-50">
+                                        <option value="Todas">Todas</option>
+                                        <option value="UGEO">UGEO</option>
+                                        <option value="UGM">UGM</option>
+                                        <option value="UGME">UGME</option>
+                                        <option value="UGRD">UGRD</option>
+                                        <option value="UGSC">UGSC</option>
+                                    </select>
+                                    <div
+                                        class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                        <i class="ph-bold ph-caret-down"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI CARDS -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <!-- PIM Total -->
+                    <div class="card p-6 flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl">
+                            <i class="ph-fill ph-currency-dollar"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">Presupuesto Total</p>
+                            <h3 class="text-xl font-bold text-gray-800" id="kpiPimTotal">S/ 0.00</h3>
+                        </div>
+                    </div>
+
+                    <!-- Avance Presupuestal (% Devengado) -->
+                    <div class="card p-6 flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded bg-green-100 text-green-600 flex items-center justify-center text-2xl">
+                            <i class="ph-fill ph-money"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">Avance Presupuestal (% Devengado)</p>
+                            <h3 class="text-xl font-bold text-gray-800" id="kpiDevengado">0.0%</h3>
+                        </div>
+                    </div>
+
+                    <!-- % Compromiso -->
+                    <div class="card p-6 flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded bg-yellow-100 text-yellow-600 flex items-center justify-center text-2xl">
+                            <i class="ph-fill ph-calendar-check"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">% Compromiso</p>
+                            <h3 class="text-xl font-bold text-gray-800" id="kpiCompromiso">0.0%</h3>
+                        </div>
+                    </div>
+
+                    <!-- Avance Presupuestal (Devengado S/) -->
+                    <div class="card p-6 flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded bg-purple-100 text-purple-600 flex items-center justify-center text-2xl">
+                            <i class="ph-fill ph-coins"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">Avance Presupuestal (Devengado S/)</p>
+                            <h3 class="text-xl font-bold text-gray-800" id="kpiDevengadoSoles">S/ 0.00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS ROW 1 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Ejecución por Unidad -->
+                    <div class="card p-6">
+                        <h3 class="font-bold text-gray-700 mb-4">Ejecución por Unidad Gerencial</h3>
+                        <div class="h-64">
+                            <canvas id="chartUnidad"></canvas>
+                        </div>
+                    </div>
+                    <!-- Ejecución Financiera Global -->
+                    <div class="card p-6">
+                        <h3 class="font-bold text-gray-700 mb-4">Ejecución Financiera (Global)</h3>
+                        <div class="h-64">
+                            <canvas id="chartGlobal"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS ROW 2 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Saldo por Ejecutar -->
+                    <div class="card p-6">
+                        <h3 class="font-bold text-gray-700 mb-4">Saldo por ejecutar</h3>
+                        <div class="h-64">
+                            <canvas id="chartSaldo"></canvas>
+                        </div>
+                    </div>
+                    <!-- Devengado Trimestral -->
+                    <div class="card p-6">
+                        <h3 class="font-bold text-gray-700 mb-4">Devengado Trimestral</h3>
+                        <div class="h-64">
+                            <canvas id="chartTrimestre"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS ROW 3 -->
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- Comprometido vs Devengado Mensual -->
+                    <div class="card p-6">
+                        <h3 class="font-bold text-gray-700 mb-4">Comparativo Mensual: Comprometido vs Devengado</h3>
+                        <div class="h-64">
+                            <canvas id="chartMensual"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // ... existing code ...
+
+        // ... existing loadHistoricalData ...
+
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // --- FETCH DATA LOGIC ---
+        // const token is already declared at the top
+
+        // Event Listeners for Filters
+        document.getElementById('filterUnidad').addEventListener('change', loadReportData);
+        document.getElementById('filterAnio').addEventListener('change', loadReportData);
+
+
+
+        let charts = {};
+
+        async function loadReportData() {
+            const unidad = document.getElementById('filterUnidad').value;
+            const anio = document.getElementById('filterAnio').value;
+
+
+
+            try {
+                const response = await fetch(`/api/reporte-general-data?unidad=${unidad}&anio=${anio}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const data = await response.json();
+                updateFilters(data.filtros_disponibles);
+                updateDashboard(data);
+            } catch (error) {
+                console.error("Error loading report data:", error);
+            }
+        }
+
+        function updateFilters(filtros) {
+            // Update Anios if not yet populated from DB
+            const anioSelect = document.getElementById('filterAnio');
+            if (filtros.anios && !anioSelect.dataset.populated) {
+                const currentVal = anioSelect.value;
+                anioSelect.innerHTML = ''; // Clear default options
+
+                // Add "Todos" option
+                const optTodos = document.createElement('option');
+                optTodos.value = "Todos";
+                optTodos.innerText = "Todos";
+                anioSelect.appendChild(optTodos);
+
+                filtros.anios.forEach(anio => {
+                    const opt = document.createElement('option');
+                    opt.value = anio;
+                    opt.innerText = anio;
+                    if (anio == currentVal) opt.selected = true;
+                    anioSelect.appendChild(opt);
+                });
+                anioSelect.dataset.populated = 'true';
+            }
+        }
+
+        function updateDashboard(data) {
+            // KPIs
+            document.getElementById('kpiPimTotal').innerText = 'S/ ' + data.pim.toLocaleString();
+
+            document.getElementById('kpiCompromiso').innerText = data.compromiso_pct + '%';
+            document.getElementById('kpiDevengado').innerText = data.devengado_pct + '%';
+            document.getElementById('kpiDevengadoSoles').innerText = 'S/ ' + data.devengado.toLocaleString();
+
+            // Helper to destroy old charts
+            const destroyChart = (id) => {
+                if (charts[id]) charts[id].destroy();
+            };
+
+            // Chart: Unidad
+            destroyChart('chartUnidad');
+            charts['chartUnidad'] = new Chart(document.getElementById('chartUnidad'), {
+                type: 'bar',
+                data: {
+                    labels: data.unidades.labels,
+                    datasets: [
+                        { label: 'PIM', data: data.unidades.pim, backgroundColor: '#818cf8' },
+                        { label: 'Devengado', data: data.unidades.devengado, backgroundColor: '#34d399' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Chart: Global
+            destroyChart('chartGlobal');
+            charts['chartGlobal'] = new Chart(document.getElementById('chartGlobal'), {
+                type: 'bar',
+                data: {
+                    labels: data.global.labels,
+                    datasets: [{
+                        label: 'Monto',
+                        data: data.global.values,
+                        backgroundColor: ['#1f2937', '#f472b6', '#6b7280', '#f59e0b']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // Chart: Saldo
+            destroyChart('chartSaldo');
+            charts['chartSaldo'] = new Chart(document.getElementById('chartSaldo'), {
+                type: 'bar',
+                indexAxis: 'y',
+                data: {
+                    labels: data.saldo.labels,
+                    datasets: [{
+                        label: 'Monto',
+                        data: data.saldo.values,
+                        backgroundColor: ['#67e8f9', '#f87171', '#fca5a5']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // Chart: Trimestre
+            destroyChart('chartTrimestre');
+            charts['chartTrimestre'] = new Chart(document.getElementById('chartTrimestre'), {
+                type: 'bar',
+                data: {
+                    labels: data.trimestre.labels,
+                    datasets: [{
+                        label: 'Devengado',
+                        data: data.trimestre.values,
+                        backgroundColor: '#1f2937'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // Chart: Mensual (Comp vs Dev)
+            destroyChart('chartMensual');
+            charts['chartMensual'] = new Chart(document.getElementById('chartMensual'), {
+                type: 'line',
+                data: {
+                    labels: data.mensual.labels,
+                    datasets: [
+                        {
+                            label: 'Comprometido',
+                            data: data.mensual.compromiso,
+                            borderColor: '#eab308',
+                            backgroundColor: 'rgba(234, 179, 8, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Devengado',
+                            data: data.mensual.devengado,
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // Init
+        loadReportData();
+
+    </script>
+    <script>
+        // --- REAL-TIME UPDATE INDICATOR ---
+        const updateBadge = document.getElementById('lastUpdateBadge');
+        const updateText = document.getElementById('lastUpdateText');
+
+        async function fetchUpdateStatus() {
+            try {
+                const response = await fetch('/api/last-update');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateText.textContent = data.last_updated;
+
+                    // Visual effect to show data is fresh
+                    updateBadge.classList.add('bg-green-50', 'text-green-700', 'border-green-100');
+                    updateBadge.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-100');
+
+                    // Reset color after a moment
+                    setTimeout(() => {
+                        updateBadge.classList.remove('bg-green-50', 'text-green-700', 'border-green-100');
+                        updateBadge.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-100');
+                    }, 2000);
+                }
+            } catch (error) {
+                console.warn("Error checking for updates:", error);
+            }
+        }
+
+        // Poll every 5 seconds
+        setInterval(fetchUpdateStatus, 5000);
+        // Initial check
+        fetchUpdateStatus();
+    </script>
+</body>
+
+</html>

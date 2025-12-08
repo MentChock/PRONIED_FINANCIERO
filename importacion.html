@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importación de Datos - PRONIED</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- VARIABLES DE SISTEMA --- */
+        :root {
+            --pronied-red: #D91023;
+            --minedu-blue: #002244;
+            --sidebar-width: 280px;
+            --sidebar-width-collapsed: 90px;
+            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background-color: #eef2f6;
+            font-family: 'Inter', sans-serif;
+            /* Keep Inter as it was in importacion.html */
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            transition: width var(--transition);
+            z-index: 100;
+            color: white;
+            background-color: var(--minedu-blue);
+            background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2604&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: hard-light;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0, 34, 68, 0.9) 0%, rgba(0, 34, 68, 0.4) 50%, rgba(0, 34, 68, 0.9) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-width-collapsed);
+        }
+
+        /* --- LOGO --- */
+        .logo-area {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-left: 5px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .logo-box {
+            min-width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .logo-box::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background: var(--pronied-red);
+            border-radius: 50%;
+            border: 2px solid var(--minedu-blue);
+        }
+
+        .logo-text {
+            margin-left: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- NAVEGACIÓN --- */
+        .nav-menu {
+            list-style: none;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .nav-link i {
+            font-size: 22px;
+            min-width: 40px;
+            display: flex;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .link-text {
+            margin-left: 10px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar.collapsed .link-text {
+            opacity: 0;
+            width: 0;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .nav-item.active .nav-link {
+            background: var(--pronied-red);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(217, 16, 35, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: absolute;
+            left: 70px;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            background: #fff;
+            color: var(--minedu-blue);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: 0.2s;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed .nav-item:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+            left: 80px;
+        }
+
+        /* --- USER PROFILE --- */
+        .user-card {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .user-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .avatar-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            margin-left: 12px;
+            overflow: hidden;
+        }
+
+        .user-details h4 {
+            font-size: 0.9rem;
+            white-space: nowrap;
+            color: white;
+        }
+
+        .user-details span {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            display: block;
+            white-space: nowrap;
+            color: #ccc;
+        }
+
+        .sidebar.collapsed .user-details {
+            display: none;
+        }
+
+        .sidebar.collapsed .user-card {
+            justify-content: center;
+            background: transparent;
+            padding: 5px;
+            border: none;
+        }
+
+        /* --- BOTÓN DE COLAPSO (FLOTANTE) --- */
+        .collapse-btn {
+            position: absolute;
+            top: 42px;
+            right: -14px;
+            width: 28px;
+            height: 28px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 105;
+            transition: 0.3s;
+        }
+
+        .collapse-btn:hover {
+            color: var(--pronied-red);
+            transform: scale(1.1);
+        }
+
+        .sidebar.collapsed .collapse-btn {
+            transform: rotate(180deg);
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 0;
+            transition: margin-left var(--transition);
+            width: 100%;
+        }
+
+        .sidebar.collapsed~.main-content {
+            margin-left: var(--sidebar-width-collapsed);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="flex min-h-screen">
+        <!-- SIDEBAR -->
+        <nav class="sidebar" id="sidebar">
+            <button class="collapse-btn" onclick="toggleSidebar()">
+                <i class="ph-bold ph-caret-left"></i>
+            </button>
+
+            <div class="sidebar-content">
+                <div class="logo-area">
+                    <div class="logo-box">
+                        <i class="ph-fill ph-buildings"></i>
+                    </div>
+                    <div class="logo-text">PRONIED</div>
+                </div>
+
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/reporte" class="nav-link">
+                            <i class="ph ph-briefcase"></i>
+                            <span class="link-text">Reporte General</span>
+                        </a>
+                        <span class="tooltip">Reporte General</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/analisis-historico" class="nav-link">
+                            <i class="ph ph-clock-counter-clockwise"></i>
+                            <span class="link-text">Análisis Histórico</span>
+                        </a>
+                        <span class="tooltip">Análisis Histórico</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/dashboard_view" class="nav-link">
+                            <i class="ph ph-squares-four"></i>
+                            <span class="link-text">Predicción</span>
+                        </a>
+                        <span class="tooltip">Predicción</span>
+                    </li>
+
+                    <!--  <li class="nav-item active">
+                        <a href="/importacion" class="nav-link">
+                            <i class="ph ph-upload"></i>
+                            <span class="link-text">Importación</span>
+                        </a>
+                        <span class="tooltip">Importación</span>
+                    </li>
+-->
+                    <li class="nav-item">
+                        <a href="/reporte-ejecutivo" class="nav-link">
+                            <i class="ph ph-chart-bar"></i>
+                            <span class="link-text">Reporte</span>
+                        </a>
+                        <span class="tooltip">Reporte</span>
+                    </li>
+
+                    <li class="nav-item" style="margin-top:auto">
+                        <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
+                            <i class="ph ph-sign-out text-red-400"></i>
+                            <span class="link-text text-red-100">Cerrar Sesión</span>
+                        </a>
+                        <span class="tooltip">Cerrar Sesión</span>
+                    </li>
+                </ul>
+
+                <div class="user-card">
+                    <div class="avatar-circle">AD</div>
+                    <div class="user-details">
+                        <h4>Admin. General</h4>
+                        <span>Infraestructura</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+
+            <!-- HEADER -->
+            <header class="bg-white shadow-sm border-b border-gray-200 p-6 flex justify-between items-center z-40">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Módulo de Importación</h1>
+                    <p class="text-sm text-gray-500 mt-1">Gestión y carga masiva de datos financieros</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span
+                        class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Sistema Activo
+                    </span>
+                </div>
+            </header>
+
+            <!-- CONTENT BODY -->
+            <main class="p-8 space-y-8 max-w-7xl mx-auto w-full">
+
+                <!-- INFO BANNER -->
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-6 flex items-start gap-4">
+                    <div class="p-3 bg-blue-100 rounded-lg text-blue-600">
+                        <i class="ph-fill ph-info text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-blue-900">Instrucciones de Carga</h3>
+                        <p class="text-sm text-blue-700 mt-1 leading-relaxed">
+                            Para actualizar la base de datos, descargue primero la <b>plantilla oficial</b>. Asegúrese
+                            de no modificar los nombres de las columnas.
+                            El sistema procesará archivos <b>.xlsx</b> y <b>.csv</b>. Los registros duplicados (mismo
+                            ID) serán actualizados.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                    <!-- CARD 1: DESCARGAR PLANTILLA -->
+                    <div
+                        class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                        <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                            <i class="ph-duotone ph-file-xls text-3xl text-green-600"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">Descargar Plantilla</h3>
+                        <p class="text-gray-500 text-sm mt-2 mb-6">Obtenga el formato Excel con todas las columnas
+                            requeridas para la carga de datos.</p>
+
+                        <button onclick="downloadTemplate()"
+                            class="w-full py-3 px-4 bg-white border border-green-600 text-green-700 font-semibold rounded-xl hover:bg-green-50 transition-colors flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-download-simple"></i>
+                            Descargar Formato
+                        </button>
+                    </div>
+
+                    <!-- CARD 2: CARGAR DATOS -->
+                    <div
+                        class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                        <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+                            <i class="ph-duotone ph-upload-simple text-3xl text-indigo-600"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">Cargar Datos</h3>
+                        <p class="text-gray-500 text-sm mt-2 mb-6">Seleccione su archivo Excel o CSV completado para
+                            procesar la actualización.</p>
+
+                        <div class="w-full space-y-3">
+                            <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls, .csv"
+                                onchange="handleFileSelect(this)">
+
+                            <button onclick="document.getElementById('fileInput').click()"
+                                class="w-full py-3 px-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors border border-transparent">
+                                <span id="fileName">Seleccionar Archivo...</span>
+                            </button>
+
+                            <button onclick="uploadData()" id="uploadBtn"
+                                class="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>
+                                <i class="ph-bold ph-cloud-arrow-up mr-2"></i>
+                                Procesar Carga
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- LOG DE CARGA -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="ph-bold ph-list-dashes text-gray-400"></i>
+                        Registro de Actividad
+                    </h3>
+                    <div id="uploadLog"
+                        class="bg-gray-50 rounded-xl p-4 h-40 overflow-y-auto text-sm font-mono text-gray-600 border border-gray-100">
+                        <p class="text-gray-400 italic">Esperando acciones...</p>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // --- SIDEBAR TOGGLE ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // --- LOGOUT ---
+        function logout() {
+            localStorage.removeItem('pronied_token');
+            window.location.href = '/';
+        }
+
+        // --- AUTH CHECK ---
+        const token = localStorage.getItem('pronied_token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        // --- FILE HANDLING ---
+        function handleFileSelect(input) {
+            const fileNameSpan = document.getElementById('fileName');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            if (input.files && input.files[0]) {
+                fileNameSpan.innerText = input.files[0].name;
+                fileNameSpan.classList.add('text-indigo-600', 'font-bold');
+                uploadBtn.disabled = false;
+                log(`Archivo seleccionado: ${input.files[0].name} (${(input.files[0].size / 1024).toFixed(1)} KB)`);
+            } else {
+                fileNameSpan.innerText = "Seleccionar Archivo...";
+                fileNameSpan.classList.remove('text-indigo-600', 'font-bold');
+                uploadBtn.disabled = true;
+            }
+        }
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('uploadLog');
+            const color = type === 'error' ? 'text-red-600' : type === 'success' ? 'text-green-600' : 'text-gray-600';
+            const timestamp = new Date().toLocaleTimeString();
+
+            // Remove placeholder if exists
+            if (logDiv.innerHTML.includes('Esperando acciones...')) {
+                logDiv.innerHTML = '';
+            }
+
+            logDiv.innerHTML += `<div class="${color} mb-1"><span class="text-gray-400">[${timestamp}]</span> ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // --- API CALLS ---
+        const API_URL = "/api";
+
+        async function downloadTemplate() {
+            try {
+                log("Iniciando descarga de plantilla...", 'info');
+                const response = await fetch(`${API_URL}/template`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error("Error al descargar plantilla");
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "plantilla_pronied.xlsx";
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                log("Plantilla descargada correctamente.", 'success');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function uploadData() {
+            const input = document.getElementById('fileInput');
+            if (!input.files || !input.files[0]) return;
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const btn = document.getElementById('uploadBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph-bold ph-spinner animate-spin mr-2"></i> Procesando...';
+
+            try {
+                log("Subiendo archivo al servidor...", 'info');
+                const response = await fetch(`${API_URL}/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.detail || "Error en la carga");
+
+                log(`Carga completada: ${result.message}`, 'success');
+                if (result.rows_processed) {
+                    log(`Registros procesados: ${result.rows_processed}`, 'success');
+                }
+
+                // Reset input
+                input.value = '';
+                handleFileSelect(input);
+
+            } catch (error) {
+                log(`Error en la carga: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false; // Actually keep disabled until new file selected? No, handleFileSelect handles it.
+                // But since we reset input, we should disable it.
+                btn.disabled = true;
+                btn.innerHTML = originalText;
+            }
+        }
+    </script>
+</body>
+
+</html>
