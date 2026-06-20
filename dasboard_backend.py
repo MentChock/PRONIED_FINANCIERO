@@ -197,13 +197,14 @@ MESES_SUFIJOS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
                  'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
 
 # Global Database Configuration & Engine (Singleton)
-DB_CONNECTION_URL = (
+import os
+DB_CONNECTION_URL = os.getenv("DB_CONNECTION_URL", (
     "mssql+pyodbc://sa:Qazokm2015.@127.0.0.1:1433/PRONIED_FINANCIERO"
     "?driver=ODBC+Driver+18+for+SQL+Server"
     "&TrustServerCertificate=yes"
     "&Encrypt=no"
     "&LoginTimeout=60"
-)
+))
 
 # Initialize Singleton Engine with Connection Pooling
 engine = create_engine(
