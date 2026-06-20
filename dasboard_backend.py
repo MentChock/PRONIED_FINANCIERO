@@ -280,7 +280,7 @@ def setup_database_triggers():
             conn.execute(text("""
                 IF NOT EXISTS (SELECT * FROM control_cambios WHERE tabla_nombre = 'ejecucion_financiera')
                 INSERT INTO control_cambios (tabla_nombre, ultima_actualizacion) 
-                VALUES ('ejecucion_financiera', GETDATE())
+                VALUES ('ejecucion_financiera', CURRENT_TIMESTAMP)
             """))
             conn.commit()
 
@@ -300,7 +300,7 @@ def setup_database_triggers():
                 AS
                 BEGIN
                     UPDATE control_cambios
-                    SET ultima_actualizacion = GETDATE()
+                    SET ultima_actualizacion = CURRENT_TIMESTAMP
                     WHERE tabla_nombre = 'ejecucion_financiera';
                 END
             """))
@@ -2211,7 +2211,7 @@ class ConfigReporte(BaseModel):
 async def get_config_reportes(current_user: str = Depends(get_current_user)):
     try:
         with engine.connect() as conn:
-            config = conn.execute(text(f"SELECT TOP 1 dia_semana, hora, minuto, activo FROM configuracion_reportes WHERE username = '{current_user}'")).fetchone()
+            config = conn.execute(text(f"SELECT dia_semana, hora, minuto, activo FROM configuracion_reportes WHERE username = '{current_user}' LIMIT 1")).fetchone()
             if config:
                 return {
                     "dia_semana": config[0],
@@ -2229,20 +2229,20 @@ async def update_config_reportes(config: ConfigReporte, current_user: str = Depe
     try:
         with engine.connect() as conn:
             # UPSERT en BD
-            existing = conn.execute(text(f"SELECT id FROM configuracion_reportes WHERE username = '{current_user}'")).fetchone()
+            existing = conn.execute(text(f"SELECT 1 FROM configuracion_reportes WHERE username = '{current_user}' LIMIT 1")).fetchone()
             if existing:
                 conn.execute(text(f'''
                     UPDATE configuracion_reportes 
                     SET dia_semana = '{config.dia_semana}', 
                         hora = '{config.hora}', 
                         minuto = '{config.minuto}', 
-                        activo = {1 if config.activo else 0}
+                        activo = {'TRUE' if config.activo else 'FALSE'}
                     WHERE username = '{current_user}'
                 '''))
             else:
                 conn.execute(text(f'''
                     INSERT INTO configuracion_reportes (username, dia_semana, hora, minuto, activo)
-                    VALUES ('{current_user}', '{config.dia_semana}', '{config.hora}', '{config.minuto}', {1 if config.activo else 0})
+                    VALUES ('{current_user}', '{config.dia_semana}', '{config.hora}', '{config.minuto}', {'TRUE' if config.activo else 'FALSE'})
                 '''))
             conn.commit()
 
@@ -2280,7 +2280,7 @@ async def update_config_reportes(config: ConfigReporte, current_user: str = Depe
 async def get_config_alertas(current_user: str = Depends(get_current_user)):
     try:
         with engine.connect() as conn:
-            config = conn.execute(text(f"SELECT TOP 1 dia_semana, hora, minuto, activo FROM configuracion_alertas WHERE username = '{current_user}'")).fetchone()
+            config = conn.execute(text(f"SELECT dia_semana, hora, minuto, activo FROM configuracion_alertas WHERE username = '{current_user}' LIMIT 1")).fetchone()
             if config:
                 return {
                     "dia_semana": config[0],
@@ -2298,20 +2298,20 @@ async def update_config_alertas(config: ConfigReporte, current_user: str = Depen
     try:
         with engine.connect() as conn:
             # UPSERT en BD
-            existing = conn.execute(text(f"SELECT id FROM configuracion_alertas WHERE username = '{current_user}'")).fetchone()
+            existing = conn.execute(text(f"SELECT 1 FROM configuracion_alertas WHERE username = '{current_user}' LIMIT 1")).fetchone()
             if existing:
                 conn.execute(text(f'''
                     UPDATE configuracion_alertas 
                     SET dia_semana = '{config.dia_semana}', 
                         hora = '{config.hora}', 
                         minuto = '{config.minuto}', 
-                        activo = {1 if config.activo else 0}
+                        activo = {'TRUE' if config.activo else 'FALSE'}
                     WHERE username = '{current_user}'
                 '''))
             else:
                 conn.execute(text(f'''
                     INSERT INTO configuracion_alertas (username, dia_semana, hora, minuto, activo)
-                    VALUES ('{current_user}', '{config.dia_semana}', '{config.hora}', '{config.minuto}', {1 if config.activo else 0})
+                    VALUES ('{current_user}', '{config.dia_semana}', '{config.hora}', '{config.minuto}', {'TRUE' if config.activo else 'FALSE'})
                 '''))
             conn.commit()
             
