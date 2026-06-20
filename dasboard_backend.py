@@ -207,7 +207,8 @@ engine = create_engine(
     DB_CONNECTION_URL, 
     pool_pre_ping=True, 
     pool_size=10, 
-    max_overflow=20
+    max_overflow=20,
+    connect_args={'connect_timeout': 5}
 )
 
 def create_engine_connection():
