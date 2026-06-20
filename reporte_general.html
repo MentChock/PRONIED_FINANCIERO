@@ -9,7 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow: hidden !important; }
+        
         /* --- VARIABLES DE SISTEMA --- */
         :root {
             --pronied-red: #D91023;
@@ -314,6 +318,22 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
     </style>
 </head>
 
@@ -390,7 +410,22 @@
                         <span class="tooltip">Reporte</span>
                     </li>
 
-                    <li class="nav-item" style="margin-top:auto">
+                    
+                    <li class="nav-item">
+                        <a href="#" onclick="openConfigModal()" class="nav-link">
+                            <i class="ph ph-gear"></i>
+                            <span class="link-text">Configuración</span>
+                        </a>
+                        <span class="tooltip">Configuración</span>
+                    </li>
+                    <li class="nav-item" id="navUsuarios" style="display: none;">
+                        <a href="/usuarios" class="nav-link">
+                            <i class="ph ph-users"></i>
+                            <span class="link-text">Usuarios</span>
+                        </a>
+                        <span class="tooltip">Usuarios</span>
+                    </li>
+<li class="nav-item" style="margin-top:auto">
                         <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
                             <i class="ph ph-sign-out text-red-400"></i>
                             <span class="link-text text-red-100">Cerrar Sesión</span>
@@ -408,6 +443,29 @@
                 </div>
             </div>
         </nav>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const userFullName = localStorage.getItem('pronied_nombre_completo') || localStorage.getItem('pronied_user');
+                const isAdmin = localStorage.getItem('pronied_admin') === '1';
+                
+                if (isAdmin) {
+                    const navUsuarios = document.getElementById('navUsuarios');
+                    if (navUsuarios) navUsuarios.style.display = 'block';
+                }
+                
+                const elements = document.querySelectorAll('.user-details h4');
+                elements.forEach(el => el.innerText = userFullName);
+                
+                const roles = document.querySelectorAll('.user-details span');
+                roles.forEach(el => el.innerText = isAdmin ? 'Administrador' : 'Usuario');
+                
+                if (userFullName) {
+                    const initials = document.querySelectorAll('.avatar-circle');
+                    initials.forEach(el => el.innerText = userFullName.substring(0, 2).toUpperCase());
+                }
+            });
+        </script>
 
         <!-- CONTENIDO PRINCIPAL -->
         <div class="main-content flex flex-col bg-gray-100">
@@ -479,105 +537,135 @@
                     </div>
                 </div>
 
-                <!-- KPI CARDS -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <!-- PIM Total -->
-                    <div class="card p-6 flex items-center gap-4">
-                        <div
-                            class="w-12 h-12 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl">
-                            <i class="ph-fill ph-currency-dollar"></i>
+                <!-- TABS DE NAVEGACIÓN -->
+                <div class="flex gap-2 mt-4 px-1 border-b border-gray-300">
+                    <button id="tabAnalitica" onclick="switchTab('analitica')"
+                        class="flex items-center gap-2 px-6 py-3 rounded-t-lg transition-all border-t-4 border-l border-r focus:outline-none relative top-[1px] font-bold text-blue-800 bg-gray-100 border-blue-600 border-gray-300 border-b-gray-100 z-10">
+                        <i class="ph-bold ph-squares-four text-xl"></i>
+                        <span>Vista Analítica (Gráficos)</span>
+                    </button>
+                    <button id="tabEjecutiva" onclick="switchTab('ejecutiva')"
+                        class="flex items-center gap-2 px-6 py-3 rounded-t-lg transition-all border-t-4 border-l border-r focus:outline-none relative top-[1px] font-medium text-gray-500 bg-transparent hover:bg-gray-200 border-transparent border-b border-b-gray-300 z-0">
+                        <i class="ph-bold ph-file-text text-xl"></i>
+                        <span>Vista Ejecutiva (Insights)</span>
+                    </button>
+                </div>
+
+                <!-- WRAPPER VISTA ANALÍTICA -->
+                <div id="viewAnalitica" class="animate-fade-in space-y-6 pt-2">
+
+                    <!-- KPI CARDS -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <!-- PIM Total -->
+                        <div class="card p-6 flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl">
+                                <i class="ph-fill ph-currency-dollar"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">Presupuesto Total</p>
+                                <h3 class="text-xl font-bold text-gray-800" id="kpiPimTotal">S/ 0.00</h3>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold uppercase">Presupuesto Total</p>
-                            <h3 class="text-xl font-bold text-gray-800" id="kpiPimTotal">S/ 0.00</h3>
+
+                        <!-- Avance Presupuestal (% Devengado) -->
+                        <div class="card p-6 flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded bg-green-100 text-green-600 flex items-center justify-center text-2xl">
+                                <i class="ph-fill ph-money"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">Avance Presupuestal (% Devengado)
+                                </p>
+                                <h3 class="text-xl font-bold text-gray-800" id="kpiDevengado">0.0%</h3>
+                            </div>
+                        </div>
+
+                        <!-- % Compromiso -->
+                        <div class="card p-6 flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded bg-yellow-100 text-yellow-600 flex items-center justify-center text-2xl">
+                                <i class="ph-fill ph-calendar-check"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">% Compromiso</p>
+                                <h3 class="text-xl font-bold text-gray-800" id="kpiCompromiso">0.0%</h3>
+                            </div>
+                        </div>
+
+                        <!-- Avance Presupuestal (Devengado S/) -->
+                        <div class="card p-6 flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded bg-purple-100 text-purple-600 flex items-center justify-center text-2xl">
+                                <i class="ph-fill ph-coins"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">Avance Presupuestal (Devengado S/)
+                                </p>
+                                <h3 class="text-xl font-bold text-gray-800" id="kpiDevengadoSoles">S/ 0.00</h3>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Avance Presupuestal (% Devengado) -->
-                    <div class="card p-6 flex items-center gap-4">
-                        <div
-                            class="w-12 h-12 rounded bg-green-100 text-green-600 flex items-center justify-center text-2xl">
-                            <i class="ph-fill ph-money"></i>
+                    <!-- CHARTS ROW 1 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Ejecución por Unidad -->
+                        <div class="card p-6">
+                            <h3 class="font-bold text-gray-700 mb-4">Ejecución por Unidad Gerencial</h3>
+                            <div class="h-64">
+                                <canvas id="chartUnidad"></canvas>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold uppercase">Avance Presupuestal (% Devengado)</p>
-                            <h3 class="text-xl font-bold text-gray-800" id="kpiDevengado">0.0%</h3>
-                        </div>
-                    </div>
-
-                    <!-- % Compromiso -->
-                    <div class="card p-6 flex items-center gap-4">
-                        <div
-                            class="w-12 h-12 rounded bg-yellow-100 text-yellow-600 flex items-center justify-center text-2xl">
-                            <i class="ph-fill ph-calendar-check"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold uppercase">% Compromiso</p>
-                            <h3 class="text-xl font-bold text-gray-800" id="kpiCompromiso">0.0%</h3>
+                        <!-- Ejecución Financiera Global -->
+                        <div class="card p-6">
+                            <h3 class="font-bold text-gray-700 mb-4">Ejecución Financiera (Global)</h3>
+                            <div class="h-64">
+                                <canvas id="chartGlobal"></canvas>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Avance Presupuestal (Devengado S/) -->
-                    <div class="card p-6 flex items-center gap-4">
-                        <div
-                            class="w-12 h-12 rounded bg-purple-100 text-purple-600 flex items-center justify-center text-2xl">
-                            <i class="ph-fill ph-coins"></i>
+                    <!-- CHARTS ROW 2 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Saldo por Ejecutar -->
+                        <div class="card p-6">
+                            <h3 class="font-bold text-gray-700 mb-4">Saldo por ejecutar</h3>
+                            <div class="h-64">
+                                <canvas id="chartSaldo"></canvas>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold uppercase">Avance Presupuestal (Devengado S/)</p>
-                            <h3 class="text-xl font-bold text-gray-800" id="kpiDevengadoSoles">S/ 0.00</h3>
+                        <!-- Devengado Trimestral -->
+                        <div class="card p-6">
+                            <h3 class="font-bold text-gray-700 mb-4">Devengado Trimestral</h3>
+                            <div class="h-64">
+                                <canvas id="chartTrimestre"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CHARTS ROW 3 -->
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- Comprometido vs Devengado Mensual -->
+                        <div class="card p-6">
+                            <h3 class="font-bold text-gray-700 mb-4">Comparativo Mensual: Comprometido vs Devengado</h3>
+                            <div class="h-64">
+                                <canvas id="chartMensual"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- END VISTA ANALÍTICA -->
+
+                <!-- VISTA EJECUTIVA -->
+                <div id="viewEjecutiva" class="animate-fade-in space-y-6 hidden pt-2">
+                    <div class="card p-8">
+                        <h2 class="text-2xl font-bold text-blue-900 mb-6 pb-3 border-b border-gray-200">Resumen
+                            Ejecutivo de Gestión</h2>
+                        <div id="insightsContainer" class="flex flex-col gap-4">
+                            <!-- Insights dinámicos -->
                         </div>
                     </div>
                 </div>
-
-                <!-- CHARTS ROW 1 -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Ejecución por Unidad -->
-                    <div class="card p-6">
-                        <h3 class="font-bold text-gray-700 mb-4">Ejecución por Unidad Gerencial</h3>
-                        <div class="h-64">
-                            <canvas id="chartUnidad"></canvas>
-                        </div>
-                    </div>
-                    <!-- Ejecución Financiera Global -->
-                    <div class="card p-6">
-                        <h3 class="font-bold text-gray-700 mb-4">Ejecución Financiera (Global)</h3>
-                        <div class="h-64">
-                            <canvas id="chartGlobal"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CHARTS ROW 2 -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Saldo por Ejecutar -->
-                    <div class="card p-6">
-                        <h3 class="font-bold text-gray-700 mb-4">Saldo por ejecutar</h3>
-                        <div class="h-64">
-                            <canvas id="chartSaldo"></canvas>
-                        </div>
-                    </div>
-                    <!-- Devengado Trimestral -->
-                    <div class="card p-6">
-                        <h3 class="font-bold text-gray-700 mb-4">Devengado Trimestral</h3>
-                        <div class="h-64">
-                            <canvas id="chartTrimestre"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CHARTS ROW 3 -->
-                <div class="grid grid-cols-1 gap-6">
-                    <!-- Comprometido vs Devengado Mensual -->
-                    <div class="card p-6">
-                        <h3 class="font-bold text-gray-700 mb-4">Comparativo Mensual: Comprometido vs Devengado</h3>
-                        <div class="h-64">
-                            <canvas id="chartMensual"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-
 
             </main>
         </div>
@@ -602,6 +690,197 @@
         document.getElementById('filterAnio').addEventListener('change', loadReportData);
 
 
+
+        function switchTab(tab) {
+            const btnAnalitica = document.getElementById('tabAnalitica');
+            const btnEjecutiva = document.getElementById('tabEjecutiva');
+            const viewAnalitica = document.getElementById('viewAnalitica');
+            const viewEjecutiva = document.getElementById('viewEjecutiva');
+
+            const baseBtnClass = "flex items-center gap-2 px-6 py-3 rounded-t-lg transition-all border-t-4 border-l border-r focus:outline-none relative top-[1px]";
+
+            // bg-gray-100 matches the exact tailwind grey background to fuse bottom border
+            const activeClassA = "font-bold text-blue-800 bg-gray-100 border-blue-600 border-gray-300 border-b-gray-100 z-10";
+            // For executiva, there's a white card below it, so making the tab background white creates better fusion 
+            const activeClassE = "font-bold text-blue-800 bg-gray-100 border-blue-600 border-gray-300 border-b-gray-100 z-10"; // Keep same behavior for consistency
+
+            const inactiveClass = "font-medium text-gray-500 bg-transparent hover:bg-gray-200 border-transparent border-b border-b-gray-300 z-0";
+
+            if (tab === 'analitica') {
+                viewAnalitica.classList.remove('hidden');
+                viewEjecutiva.classList.add('hidden');
+
+                btnAnalitica.className = baseBtnClass + " " + activeClassA;
+                btnEjecutiva.className = baseBtnClass + " " + inactiveClass;
+            } else {
+                viewAnalitica.classList.add('hidden');
+                viewEjecutiva.classList.remove('hidden');
+
+                btnEjecutiva.className = baseBtnClass + " " + activeClassE;
+                btnAnalitica.className = baseBtnClass + " " + inactiveClass;
+            }
+        }
+
+        function renderInsights(data) {
+            const container = document.getElementById('insightsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const insights = [];
+
+            // 1. Brecha Operativa (Comprometido vs Devengado)
+            const pimTotal = parseFloat(data.pim || 0);
+            const devTotal = parseFloat(data.devengado || 0);
+            const compPct = parseFloat(data.compromiso_pct || 0);
+            const devPct = parseFloat(data.devengado_pct || 0);
+            const certPct = parseFloat(data.certificado_pct || 0);
+
+            const brechaOp = (compPct - devPct).toFixed(1);
+            insights.push({
+                status: brechaOp > 5 ? 'yellow' : 'green',
+                title: 'Brecha Operativa',
+                icon: 'ph-trend-down',
+                subtitle: `Brecha exacta del ${brechaOp}%`,
+                trend: 'down',
+                description: `La brecha operativa exacta entre el avance comprometido (${compPct.toFixed(1)}%) y el devengado (${devPct.toFixed(1)}%) es de ${brechaOp}%. Esta diferencia técnica sugiere la existencia de contratos firmados y obras en curso que aún no reciben la respectiva conformidad de pago o facturación por parte de las áreas usuarias.`,
+                action: 'Dato crítico para presionar entregables físicos y facturación.'
+            });
+
+            // 2. Riesgo por Unidad Gerencial
+            if (data.unidades && data.unidades.labels && data.unidades.labels.length > 0) {
+                let uRanking = [];
+                for (let i = 0; i < data.unidades.labels.length; i++) {
+                    if(data.unidades.pim[i] > 0){
+                        uRanking.push({
+                            label: data.unidades.labels[i],
+                            pct: (data.unidades.devengado[i] / data.unidades.pim[i]) * 100
+                        });
+                    }
+                }
+                uRanking.sort((a, b) => b.pct - a.pct);
+                if(uRanking.length >= 2){
+                    const uMayor = uRanking[0];
+                    const uMenor = uRanking[uRanking.length - 1];
+                    
+                    insights.push({
+                        status: uMenor.pct < 60 ? 'red' : 'yellow',
+                        title: 'Riesgo por Unidad Gerencial',
+                        icon: 'ph-warning-circle',
+                        subtitle: `${uMayor.label} lidera | ${uMenor.label} retrasa`,
+                        trend: 'neutral',
+                        description: `Actualmente, la unidad ${uMayor.label} lidera la eficiencia del gasto con un ${uMayor.pct.toFixed(1)}% de ejecución (PIM). En fuerte contraste, la unidad ${uMenor.label} concentra el mayor volumen de recursos sin ejecutar (${uMenor.pct.toFixed(1)}%), representando matemáticamente el principal riesgo de subejecución para este periodo fiscal.`,
+                        action: 'Foco estadístico para identificación de cuellos de botella zonales.'
+                    });
+                }
+            }
+
+            // 3. Alerta de Estacionalidad
+            if (data.trimestre && data.trimestre.values && data.mensual && data.mensual.devengado) {
+                const trimesters = data.trimestre.values;
+                let maxTValue = -1, maxTIndex = 0;
+                let minTValue = Infinity, minTIndex = 0;
+                
+                for (let i = 0; i < trimesters.length; i++) {
+                    if (trimesters[i] > maxTValue) { maxTValue = trimesters[i]; maxTIndex = i; }
+                    if (trimesters[i] < minTValue && trimesters[i] > 0) { minTValue = trimesters[i]; minTIndex = i; }
+                }
+                
+                let maxMValue = -1, maxMIndex = 0;
+                const mesesDev = data.mensual.devengado;
+                const mesesLabels = data.mensual.labels || ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
+                for (let i = 0; i < mesesDev.length; i++) {
+                    if(mesesDev[i] > maxMValue) { maxMValue = mesesDev[i]; maxMIndex = i; }
+                }
+
+                if(maxTValue > -1 && maxMValue > -1 && minTValue !== Infinity && maxTValue > 0){
+                    const triMayor = `Trimestre ${maxTIndex + 1}`;
+                    const triMenor = `Trimestre ${minTIndex + 1}`;
+                    const mesPico = mesesLabels[maxMIndex];
+                    
+                    insights.push({
+                        status: 'yellow',
+                        title: 'Alerta de Estacionalidad',
+                        icon: 'ph-calendar-x',
+                        subtitle: `Pico en ${mesPico} | Caída en ${triMenor}`,
+                        trend: 'down',
+                        description: `Se detecta una concentración atípica de gasto en el ${triMayor}, impulsada fuertemente por el pico máximo de ejecución en el mes de ${mesPico}. En contraste, el ${triMenor} registra la caída más drástica del periodo. Se recomienda revisar urgentemente la programación de hitos para los meses de caída a fin de evitar la paralización financiera.`,
+                        action: 'Medida estadística factual de densidad y vacíos temporales.'
+                    });
+                }
+            }
+
+            // 4. Capacidad de Maniobra
+            if (pimTotal > 0) {
+                const compTotal = (compPct / 100) * pimTotal;
+                const certTotal = (certPct / 100) * pimTotal;
+
+                const saldoDev = compTotal - devTotal;
+                const saldoCA = certTotal - compTotal;
+                const saldoCert = pimTotal - certTotal;
+
+                const saldos = [
+                    { nombre: 'Saldo por Devengar (DEV)', valor: saldoDev },
+                    { nombre: 'Saldo por Comprometer (CA)', valor: saldoCA },
+                    { nombre: 'Saldo por Certificar (CERT)', valor: saldoCert }
+                ];
+
+                saldos.sort((a, b) => a.valor - b.valor);
+                const menorSaldo = saldos[0];
+
+                const montoMenorM = (menorSaldo.valor / 1000000).toFixed(1);
+                insights.push({
+                    status: 'gray',
+                    title: 'Capacidad de Maniobra',
+                    icon: 'ph-scales',
+                    subtitle: `${menorSaldo.nombre} es crítico`,
+                    trend: 'neutral',
+                    description: `Al comparar las fases operativas, el ${menorSaldo.nombre} se encuentra en su nivel más bajo frente a los demás estratos, con un remanente de S/ ${montoMenorM} Millones. Esto concluye que la mayor parte de los recursos en esa fase ya están reservados o procesados, dejando un margen operativo mínimo para incluir nuevos proyectos o contratos.`,
+                    action: 'Resumen descriptivo del embudo financiero para alta dirección.'
+                });
+            }
+
+            const colorMap = {
+                red: { border: 'border-red-500', bg: 'bg-red-50', text: 'text-red-800', badgeText: 'text-red-900', badgeBg: 'bg-red-100', icon: 'text-red-500' },
+                yellow: { border: 'border-yellow-400', bg: 'bg-yellow-50', text: 'text-yellow-800', badgeText: 'text-yellow-900', badgeBg: 'bg-yellow-100', icon: 'text-yellow-500' },
+                green: { border: 'border-green-500', bg: 'bg-green-50', text: 'text-green-800', badgeText: 'text-green-900', badgeBg: 'bg-green-100', icon: 'text-green-500' },
+                gray: { border: 'border-slate-400', bg: 'bg-slate-50', text: 'text-slate-700', badgeText: 'text-slate-800', badgeBg: 'bg-slate-200', icon: 'text-slate-500' }
+            };
+
+            const trendMap = {
+                up: '<i class="ph-bold ph-trend-up text-green-500"></i>',
+                down: '<i class="ph-bold ph-trend-down text-red-500"></i>',
+                neutral: '<i class="ph-bold ph-minus text-gray-500"></i>'
+            };
+
+            let html = '';
+            insights.forEach(ins => {
+                const c = colorMap[ins.status];
+                const descFormatted = ins.description.replace(/\n/g, '<br><br>');
+                html += `
+                <div class="flex flex-col bg-white border-l-[6px] ${c.border} rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-gray-800">${ins.title}</h3>
+                        </div>
+                        <i class="ph-fill ${ins.icon} ${c.icon} text-3xl"></i>
+                    </div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="font-bold text-gray-700 text-lg">${ins.subtitle}</span>
+                        ${trendMap[ins.trend]}
+                    </div>
+                    <div class="${c.bg} p-4 rounded-md">
+                        <p class="${c.text} text-[15px] mb-3 font-medium leading-relaxed">${descFormatted}</p>
+                        <div class="inline-block px-3 py-1.5 rounded bg-white/60">
+                            <span class="${c.badgeText} text-sm font-bold">Resumen Informativo: </span>
+                            <span class="${c.text} text-sm font-medium">${ins.action}</span>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
 
         let charts = {};
 
@@ -644,24 +923,46 @@
                 optTodos.innerText = "Todos";
                 anioSelect.appendChild(optTodos);
 
-                filtros.anios.forEach(anio => {
+                const maxAnio = Math.max(...filtros.anios).toString();
+                
+                filtros.anios.sort((a,b) => b-a).forEach(anio => {
                     const opt = document.createElement('option');
                     opt.value = anio;
                     opt.innerText = anio;
-                    if (anio == currentVal) opt.selected = true;
+                    if (anio.toString() === maxAnio) opt.selected = true;
                     anioSelect.appendChild(opt);
                 });
                 anioSelect.dataset.populated = 'true';
+                
+                if (currentVal !== maxAnio) {
+                    loadReportData();
+                }
             }
         }
 
         function updateDashboard(data) {
+            // Tooltip comun
+            const currencyTooltip = {
+                callbacks: {
+                    label: function (context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.raw !== null) {
+                            label += 'S/ ' + Number(context.raw).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
+                        return label;
+                    }
+                }
+            };
+
             // KPIs
-            document.getElementById('kpiPimTotal').innerText = 'S/ ' + data.pim.toLocaleString();
+            document.getElementById('kpiPimTotal').innerText = 'S/ ' + data.pim.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
             document.getElementById('kpiCompromiso').innerText = data.compromiso_pct + '%';
             document.getElementById('kpiDevengado').innerText = data.devengado_pct + '%';
-            document.getElementById('kpiDevengadoSoles').innerText = 'S/ ' + data.devengado.toLocaleString();
+            document.getElementById('kpiDevengadoSoles').innerText = 'S/ ' + data.devengado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
             // Helper to destroy old charts
             const destroyChart = (id) => {
@@ -679,7 +980,11 @@
                         { label: 'Devengado', data: data.unidades.devengado, backgroundColor: '#34d399' }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { tooltip: currencyTooltip }
+                }
             });
 
             // Chart: Global
@@ -694,7 +999,14 @@
                         backgroundColor: ['#1f2937', '#f472b6', '#6b7280', '#f59e0b']
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: currencyTooltip
+                    }
+                }
             });
 
             // Chart: Saldo
@@ -710,7 +1022,14 @@
                         backgroundColor: ['#67e8f9', '#f87171', '#fca5a5']
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: currencyTooltip
+                    }
+                }
             });
 
             // Chart: Trimestre
@@ -725,11 +1044,22 @@
                         backgroundColor: '#1f2937'
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: currencyTooltip
+                    }
+                }
             });
 
             // Chart: Mensual (Comp vs Dev)
             destroyChart('chartMensual');
+
+            // Render Insights para Vista Ejecutiva
+            renderInsights(data);
+
             charts['chartMensual'] = new Chart(document.getElementById('chartMensual'), {
                 type: 'line',
                 data: {
@@ -753,7 +1083,11 @@
                         }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { tooltip: currencyTooltip }
+                }
             });
         }
 
@@ -793,6 +1127,257 @@
         // Initial check
         fetchUpdateStatus();
     </script>
+
+    <!-- --- VENTANA MODAL: CONFIGURACIÓN REPORTE SEMANAL --- -->
+    <div id="configModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="closeConfigModal()"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto transform transition-all scale-95">
+            <div class="modal-content py-4 text-left px-6">
+                <!-- Título Modal -->
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <div>
+                        <p class="text-xl font-bold text-gray-800"><i class="ph-bold ph-gear text-indigo-600"></i> Configuración de Correos</p>
+                    </div>
+                    <button onclick="closeConfigModal()" class="cursor-pointer z-50 text-gray-500 hover:text-red-500 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Cuerpo -->
+                <div class="my-5 space-y-6">
+                    
+                    <!-- Sección 1: Reporte Semanal -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-envelope-simple text-indigo-600"></i> Reporte Semanal (HU011)</h3>
+                        <p class="text-sm text-gray-600">Resumen semanal automático para la gerencia.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-gray-50 p-3 rounded">
+                            <input type="checkbox" id="configActivo" class="w-5 h-5 text-indigo-600 rounded cursor-pointer">
+                            <label for="configActivo" class="font-bold text-gray-700 cursor-pointer">Activar envío de reporte</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Día de la semana</label>
+                            <select id="configDia" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                <option value="mon">Lunes</option>
+                                <option value="tue">Martes</option>
+                                <option value="wed">Miércoles</option>
+                                <option value="thu">Jueves</option>
+                                <option value="fri">Viernes</option>
+                                <option value="sat">Sábado</option>
+                                <option value="sun">Domingo</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="configHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="configMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 2: Alerta de Retrasos Críticos -->
+                    <div class="space-y-4 pt-2">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-warning-circle text-red-500"></i> Alertas de Retraso Crítico (HU004)</h3>
+                        <p class="text-sm text-gray-600">Alerta de unidades gerenciales por debajo del 80%.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-red-50 p-3 rounded">
+                            <input type="checkbox" id="alertaActivo" class="w-5 h-5 text-red-600 rounded cursor-pointer">
+                            <label for="alertaActivo" class="font-bold text-red-700 cursor-pointer">Activar alertas de retraso</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Días de Evaluación</label>
+                            <div class="flex gap-2" id="alertaDiasContainer">
+                                <button type="button" data-day="mon" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">L</button>
+                                <button type="button" data-day="tue" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">M</button>
+                                <button type="button" data-day="wed" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">X</button>
+                                <button type="button" data-day="thu" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">J</button>
+                                <button type="button" data-day="fri" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">V</button>
+                                <button type="button" data-day="sat" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">S</button>
+                                <button type="button" data-day="sun" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">D</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="alertaHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="alertaMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="39">39</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Modal -->
+                <div class="flex justify-end pt-4 border-t gap-2">
+                    <button onclick="closeConfigModal()" class="px-5 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 font-medium transition text-sm">Cancelar</button>
+                    <button onclick="saveConfig()" class="px-5 py-2 bg-indigo-600 rounded-lg text-white hover:bg-indigo-700 font-medium transition shadow text-sm flex items-center gap-2"><i class="fa-solid fa-save"></i> Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LÓGICA DE CONFIGURACIÓN (HU011 y HU004) ---
+        async function openConfigModal() {
+            const selectHora = document.getElementById('configHora');
+            const alertaHora = document.getElementById('alertaHora');
+            if (selectHora.options.length === 0) {
+                for (let i = 0; i < 24; i++) {
+                    const h = i.toString().padStart(2, '0');
+                    selectHora.add(new Option(h + ":00", h));
+                    alertaHora.add(new Option(h + ":00", h));
+                }
+            }
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                
+                // Fetch both configurations in parallel
+                const [resReporte, resAlerta] = await Promise.all([
+                    fetch('/api/config-reportes', { headers: {'Authorization': `Bearer ${token}`} }),
+                    fetch('/api/config-alertas', { headers: {'Authorization': `Bearer ${token}`} })
+                ]);
+
+                if (resReporte.ok) {
+                    const data = await resReporte.json();
+                    document.getElementById('configDia').value = data.dia_semana;
+                    document.getElementById('configHora').value = data.hora;
+                    
+                    let minSelect = document.getElementById('configMinuto');
+                    let found = Array.from(minSelect.options).some(o => o.value === data.minuto);
+                    if(!found) minSelect.add(new Option(data.minuto, data.minuto));
+                    minSelect.value = data.minuto;
+                    
+                    document.getElementById('configActivo').checked = data.activo;
+                }
+
+                if (resAlerta.ok) {
+                    const dataAlerta = await resAlerta.json();
+                    
+                    const daysStr = dataAlerta.dia_semana || "*";
+                    const daysArray = daysStr === "*" ? ["mon","tue","wed","thu","fri","sat","sun"] : daysStr.split(",");
+                    
+                    document.querySelectorAll('#alertaDiasContainer .day-btn').forEach(btn => {
+                        const isSelected = daysArray.includes(btn.dataset.day);
+                        if (isSelected) {
+                            btn.classList.add('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        } else {
+                            btn.classList.remove('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        }
+                    });
+
+                    document.getElementById('alertaHora').value = dataAlerta.hora;
+                    
+                    let minSelectAlerta = document.getElementById('alertaMinuto');
+                    let foundAlerta = Array.from(minSelectAlerta.options).some(o => o.value === dataAlerta.minuto);
+                    if(!foundAlerta) minSelectAlerta.add(new Option(dataAlerta.minuto, dataAlerta.minuto));
+                    minSelectAlerta.value = dataAlerta.minuto;
+                    
+                    document.getElementById('alertaActivo').checked = dataAlerta.activo;
+                }
+
+            } catch(e) {
+                console.error("Error cargando config", e);
+            }
+
+            const modal = document.getElementById('configModal');
+            document.body.classList.add('modal-active');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-95');
+            modal.querySelector('.modal-container').classList.add('scale-100');
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('configModal');
+            document.body.classList.remove('modal-active');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-100');
+            modal.querySelector('.modal-container').classList.add('scale-95');
+        }
+
+        function toggleDayBtn(btn) {
+            btn.classList.toggle('selected');
+            if (btn.classList.contains('selected')) {
+                btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.add('border-red-400', 'bg-red-50', 'text-red-600');
+            } else {
+                btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.remove('border-red-400', 'bg-red-50', 'text-red-600');
+            }
+        }
+
+        async function saveConfig() {
+            const payloadReporte = {
+                dia_semana: document.getElementById('configDia').value,
+                hora: document.getElementById('configHora').value,
+                minuto: document.getElementById('configMinuto').value,
+                activo: document.getElementById('configActivo').checked
+            };
+
+            const selectedBtns = document.querySelectorAll('#alertaDiasContainer .day-btn.selected');
+            const selectedDays = Array.from(selectedBtns).map(btn => btn.dataset.day);
+            const alertaDiaValue = selectedDays.length === 7 ? "*" : (selectedDays.length === 0 ? "none" : selectedDays.join(","));
+
+            if (selectedDays.length === 0 && document.getElementById('alertaActivo').checked) {
+                alert("Debe seleccionar al menos un día para las alertas si están activas.");
+                return;
+            }
+
+            const payloadAlerta = {
+                dia_semana: alertaDiaValue,
+                hora: document.getElementById('alertaHora').value,
+                minuto: document.getElementById('alertaMinuto').value,
+                activo: document.getElementById('alertaActivo').checked
+            };
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+
+                const [resRep, resAle] = await Promise.all([
+                    fetch('/api/config-reportes', { method: 'POST', headers, body: JSON.stringify(payloadReporte) }),
+                    fetch('/api/config-alertas', { method: 'POST', headers, body: JSON.stringify(payloadAlerta) })
+                ]);
+                
+                if (resRep.ok && resAle.ok) {
+                    alert("¡Configuración guardada exitosamente!");
+                    closeConfigModal();
+                } else {
+                    alert("Error guardando la configuración.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión con el servidor.");
+            }
+        }
+    </script>
 </body>
+
 
 </html>

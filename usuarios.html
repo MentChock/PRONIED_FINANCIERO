@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción Financiera PRONIED</title>
+    <!-- Librerías Externas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* --- VARIABLES DE SISTEMA --- */
+        :root {
+            --pronied-red: #D91023;
+            --minedu-blue: #002244;
+            --blue-overlay: rgba(0, 34, 68, 0.85);
+            --sidebar-width: 280px;
+            --sidebar-width-collapsed: 90px;
+            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background-color: #eef2f6;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* --- SIDEBAR CON EFECTO "TINTA AZUL" --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            transition: width var(--transition);
+            z-index: 100;
+            color: white;
+            background-color: var(--minedu-blue);
+            background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2604&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: hard-light;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0, 34, 68, 0.9) 0%, rgba(0, 34, 68, 0.4) 50%, rgba(0, 34, 68, 0.9) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-width-collapsed);
+        }
+
+        /* --- LOGO --- */
+        .logo-area {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-left: 5px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .logo-box {
+            min-width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .logo-box::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background: var(--pronied-red);
+            border-radius: 50%;
+            border: 2px solid var(--minedu-blue);
+        }
+
+        .logo-text {
+            margin-left: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- NAVEGACIÓN --- */
+        .nav-menu {
+            list-style: none;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .nav-link i {
+            font-size: 22px;
+            min-width: 40px;
+            display: flex;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .link-text {
+            margin-left: 10px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar.collapsed .link-text {
+            opacity: 0;
+            width: 0;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .nav-item.active .nav-link {
+            background: var(--pronied-red);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(217, 16, 35, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: absolute;
+            left: 70px;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            background: #fff;
+            color: var(--minedu-blue);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: 0.2s;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed .nav-item:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+            left: 80px;
+        }
+
+        /* --- USER PROFILE --- */
+        .user-card {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .user-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .avatar-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            margin-left: 12px;
+            overflow: hidden;
+        }
+
+        .user-details h4 {
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .user-details span {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            display: block;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .user-details {
+            display: none;
+        }
+
+        .sidebar.collapsed .user-card {
+            justify-content: center;
+            background: transparent;
+            padding: 5px;
+            border: none;
+        }
+
+        /* --- BOTÓN DE COLAPSO (FLOTANTE) --- */
+        .collapse-btn {
+            position: absolute;
+            top: 42px;
+            right: -14px;
+            width: 28px;
+            height: 28px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            color: var(--minedu-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 105;
+            transition: 0.3s;
+        }
+
+        .collapse-btn:hover {
+            color: var(--pronied-red);
+            transform: scale(1.1);
+        }
+
+        .sidebar.collapsed .collapse-btn {
+            transform: rotate(180deg);
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 0;
+            /* El padding lo maneja el container interno */
+            transition: margin-left var(--transition);
+            width: 100%;
+        }
+
+        .sidebar.collapsed~.main-content {
+            margin-left: var(--sidebar-width-collapsed);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Estilos para el Modal de Simulación */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+
+        body.modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
+    </style>
+</head>
+
+<body class="text-gray-800">
+
+    <!-- PROTECCIÓN DE RUTA -->
+    <!-- --- VENTANA MODAL: CONFIGURACIÓN REPORTE SEMANAL --- -->
+    <div id="configModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="closeConfigModal()"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto transform transition-all scale-95">
+            <div class="modal-content py-4 text-left px-6">
+                <!-- Título Modal -->
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <div>
+                        <p class="text-xl font-bold text-gray-800"><i class="ph-bold ph-gear text-indigo-600"></i> Configuración de Correos</p>
+                    </div>
+                    <button onclick="closeConfigModal()" class="cursor-pointer z-50 text-gray-500 hover:text-red-500 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Cuerpo -->
+                <div class="my-5 space-y-6">
+                    
+                    <!-- Sección 1: Reporte Semanal -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-envelope-simple text-indigo-600"></i> Reporte Semanal (HU011)</h3>
+                        <p class="text-sm text-gray-600">Resumen semanal automático para la gerencia.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-gray-50 p-3 rounded">
+                            <input type="checkbox" id="configActivo" class="w-5 h-5 text-indigo-600 rounded cursor-pointer">
+                            <label for="configActivo" class="font-bold text-gray-700 cursor-pointer">Activar envío de reporte</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Día de la semana</label>
+                            <select id="configDia" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                <option value="mon">Lunes</option>
+                                <option value="tue">Martes</option>
+                                <option value="wed">Miércoles</option>
+                                <option value="thu">Jueves</option>
+                                <option value="fri">Viernes</option>
+                                <option value="sat">Sábado</option>
+                                <option value="sun">Domingo</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="configHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="configMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 2: Alerta de Retrasos Críticos -->
+                    <div class="space-y-4 pt-2">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-warning-circle text-red-500"></i> Alertas de Retraso Crítico (HU004)</h3>
+                        <p class="text-sm text-gray-600">Alerta de unidades gerenciales por debajo del 80%.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-red-50 p-3 rounded">
+                            <input type="checkbox" id="alertaActivo" class="w-5 h-5 text-red-600 rounded cursor-pointer">
+                            <label for="alertaActivo" class="font-bold text-red-700 cursor-pointer">Activar alertas de retraso</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Días de Evaluación</label>
+                            <div class="flex gap-2" id="alertaDiasContainer">
+                                <button type="button" data-day="mon" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">L</button>
+                                <button type="button" data-day="tue" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">M</button>
+                                <button type="button" data-day="wed" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">X</button>
+                                <button type="button" data-day="thu" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">J</button>
+                                <button type="button" data-day="fri" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">V</button>
+                                <button type="button" data-day="sat" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">S</button>
+                                <button type="button" data-day="sun" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">D</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="alertaHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="alertaMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="39">39</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Modal -->
+                <div class="flex justify-end pt-4 border-t gap-2">
+                    <button onclick="closeConfigModal()" class="px-5 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 font-medium transition text-sm">Cancelar</button>
+                    <button onclick="saveConfig()" class="px-5 py-2 bg-indigo-600 rounded-lg text-white hover:bg-indigo-700 font-medium transition shadow text-sm flex items-center gap-2"><i class="fa-solid fa-save"></i> Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('pronied_token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        function logout() {
+            localStorage.removeItem('pronied_token');
+            localStorage.removeItem('pronied_user');
+            window.location.href = '/';
+        }
+    </script>
+
+    <!-- LAYOUT PRINCIPAL -->
+    <div class="flex min-h-screen">
+
+        <!-- SIDEBAR -->
+        <nav class="sidebar" id="sidebar">
+            <!-- El botón ahora flota en el borde -->
+            <button class="collapse-btn" onclick="toggleSidebar()">
+                <i class="ph-bold ph-caret-left"></i>
+            </button>
+
+            <!-- Contenedor interno para asegurar z-index sobre el filtro -->
+            <div class="sidebar-content">
+
+                <div class="logo-area">
+                    <div class="logo-box">
+                        <i class="ph-fill ph-buildings"></i>
+                    </div>
+                    <div class="logo-text">PRONIED</div>
+                </div>
+
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/reporte" class="nav-link">
+                            <i class="ph ph-briefcase"></i>
+                            <span class="link-text">Reporte General</span>
+                        </a>
+                        <span class="tooltip">Reporte General</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/analisis-historico" class="nav-link">
+                            <i class="ph ph-clock-counter-clockwise"></i>
+                            <span class="link-text">Análisis Histórico</span>
+                        </a>
+                        <span class="tooltip">Análisis Histórico</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/dashboard_view" class="nav-link">
+                            <i class="ph ph-squares-four"></i>
+                            <span class="link-text">Predicción</span>
+                        </a>
+                        <span class="tooltip">Predicción</span>
+                    </li>
+
+                    <!--                    <li class="nav-item">
+                        <a href="/importacion" class="nav-link">
+                            <i class="ph ph-upload"></i>
+                            <span class="link-text">Importación</span>
+                        </a>
+                        <span class="tooltip">Importación</span>
+                    </li>
+                -->
+                    <li class="nav-item">
+                        <a href="/reporte-ejecutivo" class="nav-link">
+                            <i class="ph ph-chart-bar"></i>
+                            <span class="link-text">Reporte</span>
+                        </a>
+                        <span class="tooltip">Reporte</span>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="#" onclick="openConfigModal()" class="nav-link">
+                            <i class="ph ph-gear"></i>
+                            <span class="link-text">Configuración</span>
+                        </a>
+                        <span class="tooltip">Configuración</span>
+                    </li>
+
+                    <li class="nav-item active" id="navUsuarios">
+                        <a href="/usuarios" class="nav-link">
+                            <i class="ph ph-users"></i>
+                            <span class="link-text">Usuarios</span>
+                        </a>
+                        <span class="tooltip">Usuarios</span>
+                    </li>
+
+                    <!-- Botón Cerrar Sesión (Integrado al diseño) -->
+                    <li class="nav-item" style="margin-top:auto">
+                        <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
+                            <i class="ph ph-sign-out text-red-400"></i>
+                            <span class="link-text text-red-100">Cerrar Sesión</span>
+                        </a>
+                        <span class="tooltip">Cerrar Sesión</span>
+                    </li>
+                </ul>
+
+                <div class="user-card">
+                    <div class="avatar-circle">AD</div>
+                    <div class="user-details">
+                        <h4>Admin. General</h4>
+                        <span>Infraestructura</span>
+                    </div>
+                </div>
+
+            </div>
+        </nav>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const userFullName = localStorage.getItem('pronied_nombre_completo') || localStorage.getItem('pronied_user');
+                const isAdmin = localStorage.getItem('pronied_admin') === '1';
+                
+                const elements = document.querySelectorAll('.user-details h4');
+                elements.forEach(el => el.innerText = userFullName);
+                
+                const roles = document.querySelectorAll('.user-details span');
+                roles.forEach(el => el.innerText = isAdmin ? 'Administrador' : 'Usuario');
+                
+                if (userFullName) {
+                    const initials = document.querySelectorAll('.avatar-circle');
+                    initials.forEach(el => el.innerText = userFullName.substring(0, 2).toUpperCase());
+                }
+            });
+        </script>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="main-content flex flex-col bg-gray-100">
+
+            <!-- TOP HEADER (Barra Superior) -->
+            <header class="bg-white shadow p-4 flex justify-between items-center z-40">
+                <!-- Título / Breadcrumb -->
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">Administración de Sistema</h1>
+                    <p class="text-xs text-gray-500">Módulo de Seguridad y Accesos</p>
+                </div>
+            </header>
+
+            <!-- SCROLLABLE CONTENT -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Gestión de Usuarios</h2>
+                        <p class="text-gray-500 text-sm">Administra los accesos y permisos del sistema.</p>
+                    </div>
+                    <button onclick="openUserModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> Nuevo Usuario
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs font-semibold border-b border-gray-100">
+                                <tr>
+                                    <th class="px-6 py-4">Usuario</th>
+                                    <th class="px-6 py-4">DNI</th>
+                                    <th class="px-6 py-4">Nombre Completo</th>
+                                    <th class="px-6 py-4">Correo</th>
+                                    <th class="px-6 py-4">Rol</th>
+                                    <th class="px-6 py-4">Estado</th>
+                                    <th class="px-6 py-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody" class="divide-y divide-gray-50">
+                                <!-- Users populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL USUARIO -->
+    <div id="userModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="closeUserModal()"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-xl shadow-lg z-50 overflow-y-auto transform transition-all scale-95">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <h3 class="text-lg font-bold text-gray-800" id="modalTitle">Nuevo Usuario</h3>
+                    <button onclick="closeUserModal()" class="text-gray-400 hover:text-red-500 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form id="userForm" class="mt-4 space-y-4">
+                    <input type="hidden" id="userId">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Nombre de Usuario</label>
+                            <input type="text" id="username" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">DNI</label>
+                            <input type="text" id="dni" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500" required maxlength="15">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Contraseña</label>
+                            <input type="password" id="password" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500" placeholder="••••••••">
+                            <p class="text-[10px] text-gray-400 mt-1" id="pwdHint">Déjalo en blanco para no cambiarla.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Correo Electrónico</label>
+                            <input type="email" id="correo" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500" required>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Nombres</label>
+                            <input type="text" id="nombres" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Apellidos</label>
+                            <input type="text" id="apellidos" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500" required>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm font-medium text-gray-700">Administrador</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="isAdmin" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between" id="statusContainer">
+                            <label class="text-sm font-medium text-gray-700">Cuenta Activa</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="isActive" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="flex justify-end pt-4 gap-2 mt-2">
+                    <button type="button" onclick="closeUserModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">Cancelar</button>
+                    <button type="button" onclick="saveUser()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE USUARIOS -->
+    <script>
+        const API_URL = "/api";
+        let usersData = [];
+
+        // VERIFICAR ADMIN
+        function checkAdminAccess() {
+            const isAdmin = localStorage.getItem('pronied_admin');
+            if (isAdmin !== '1') {
+                window.location.href = '/reporte';
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('pronied_token');
+                const res = await fetch(`${API_URL}/usuarios`, {
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                if (res.status === 403 || res.status === 401) {
+                    window.location.href = '/reporte';
+                    return;
+                }
+                usersData = await res.json();
+                renderTable();
+            } catch (e) {
+                console.error("Error loading users", e);
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            
+            usersData.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                
+                const roleBadge = u.administrador ? 
+                    '<span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-[10px] font-bold">ADMINISTRADOR</span>' : 
+                    '<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px] font-bold">USUARIO</span>';
+                
+                const statusBadge = u.activo ? 
+                    '<span class="flex items-center gap-1 text-green-600 font-medium text-xs"><div class="w-1.5 h-1.5 rounded-full bg-green-500"></div> Activo</span>' : 
+                    '<span class="flex items-center gap-1 text-red-500 font-medium text-xs"><div class="w-1.5 h-1.5 rounded-full bg-red-500"></div> Inactivo</span>';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-800">
+                        ${u.username}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">${u.dni || ''}</td>
+                    <td class="px-6 py-4 text-gray-600">${u.nombres || ''} ${u.apellidos || ''}</td>
+                    <td class="px-6 py-4 text-gray-600">${u.correo || ''}</td>
+                    <td class="px-6 py-4">${roleBadge}</td>
+                    <td class="px-6 py-4">${statusBadge}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="editUser(${u.id})" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 p-2 rounded transition" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        ${u.activo ? `
+                        <button onclick="toggleStatus(${u.id}, 0)" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-2 rounded transition ml-1" title="Desactivar">
+                            <i class="fa-solid fa-ban"></i>
+                        </button>` : ``}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openUserModal(user = null) {
+            const modal = document.getElementById('userModal');
+            const pwdHint = document.getElementById('pwdHint');
+            const statusContainer = document.getElementById('statusContainer');
+            
+            document.getElementById('userForm').reset();
+            
+            if (user) {
+                document.getElementById('modalTitle').innerText = 'Editar Usuario';
+                document.getElementById('userId').value = user.id;
+                document.getElementById('username').value = user.username;
+                document.getElementById('dni').value = user.dni || '';
+                document.getElementById('nombres').value = user.nombres;
+                document.getElementById('apellidos').value = user.apellidos;
+                document.getElementById('correo').value = user.correo;
+                document.getElementById('isAdmin').checked = user.administrador === 1;
+                document.getElementById('isActive').checked = user.activo === 1;
+                
+                document.getElementById('password').required = false;
+                pwdHint.classList.remove('hidden');
+                statusContainer.classList.remove('hidden');
+            } else {
+                document.getElementById('modalTitle').innerText = 'Nuevo Usuario';
+                document.getElementById('userId').value = '';
+                document.getElementById('password').required = true;
+                document.getElementById('isActive').checked = true; // Activo por defecto
+                pwdHint.classList.add('hidden');
+                statusContainer.classList.add('hidden'); // No se puede desactivar al crear
+            }
+            
+            document.body.classList.add('modal-active');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-95');
+            modal.querySelector('.modal-container').classList.add('scale-100');
+        }
+
+        function closeUserModal() {
+            const modal = document.getElementById('userModal');
+            document.body.classList.remove('modal-active');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-100');
+            modal.querySelector('.modal-container').classList.add('scale-95');
+        }
+
+        function editUser(id) {
+            const user = usersData.find(u => u.id === id);
+            if (user) openUserModal(user);
+        }
+
+        async function saveUser() {
+            const form = document.getElementById('userForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const id = document.getElementById('userId').value;
+            const password = document.getElementById('password').value;
+            
+            if (!id && !password) {
+                alert("La contraseña es obligatoria para nuevos usuarios.");
+                return;
+            }
+            
+            const payload = {
+                username: document.getElementById('username').value,
+                dni: document.getElementById('dni').value,
+                nombres: document.getElementById('nombres').value,
+                apellidos: document.getElementById('apellidos').value,
+                correo: document.getElementById('correo').value,
+                administrador: document.getElementById('isAdmin').checked ? 1 : 0,
+                envio_correo: 0
+            };
+            
+            if (password) payload.password = password;
+
+            let method = 'POST';
+            let url = `${API_URL}/usuarios`;
+            
+            if (id) {
+                method = 'PUT';
+                url += `/${id}`;
+                payload.activo = document.getElementById('isActive').checked ? 1 : 0;
+            }
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    alert(id ? "Usuario actualizado exitosamente." : "Usuario creado exitosamente.");
+                    closeUserModal();
+                    loadUsers();
+                } else {
+                    let err = {};
+                    try { err = await res.json(); } catch(e){}
+                    alert("Error: " + (err.detail || "No se pudo guardar el usuario."));
+                }
+            } catch (e) {
+                console.error("Error saving user", e);
+                alert("Error de conexión al guardar el usuario.");
+            }
+        }
+
+        async function toggleStatus(id, status) {
+            if (status === 0) {
+                if (!confirm("¿Estás seguro de que deseas desactivar este usuario?")) return;
+                try {
+                    const token = localStorage.getItem('pronied_token');
+                    const res = await fetch(`${API_URL}/usuarios/${id}`, {
+                        method: 'DELETE',
+                        headers: {'Authorization': `Bearer ${token}`}
+                    });
+                    if (res.ok) {
+                        loadUsers();
+                    } else {
+                        let err = {};
+                        try { err = await res.json(); } catch(e){}
+                        alert("Error: " + (err.detail || "No se pudo desactivar el usuario."));
+                    }
+                } catch (e) {
+                    console.error("Error toggling status", e);
+                    alert("Error de conexión.");
+                }
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // --- INICIALIZACIÓN ---
+        checkAdminAccess();
+        loadUsers();
+    
+// --- 4. LÓGICA DE CONFIGURACIÓN (HU011 y HU004) ---
+        async function openConfigModal() {
+            const selectHora = document.getElementById('configHora');
+            const alertaHora = document.getElementById('alertaHora');
+            if (selectHora.options.length === 0) {
+                for (let i = 0; i < 24; i++) {
+                    const h = i.toString().padStart(2, '0');
+                    selectHora.add(new Option(h + ":00", h));
+                    alertaHora.add(new Option(h + ":00", h));
+                }
+            }
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                
+                // Fetch both configurations in parallel
+                const [resReporte, resAlerta] = await Promise.all([
+                    fetch(API_URL + '/config-reportes', { headers: {'Authorization': `Bearer ${token}`} }),
+                    fetch(API_URL + '/config-alertas', { headers: {'Authorization': `Bearer ${token}`} })
+                ]);
+
+                if (resReporte.ok) {
+                    const data = await resReporte.json();
+                    document.getElementById('configDia').value = data.dia_semana;
+                    document.getElementById('configHora').value = data.hora;
+                    
+                    let minSelect = document.getElementById('configMinuto');
+                    let found = Array.from(minSelect.options).some(o => o.value === data.minuto);
+                    if(!found) minSelect.add(new Option(data.minuto, data.minuto));
+                    minSelect.value = data.minuto;
+                    
+                    document.getElementById('configActivo').checked = data.activo;
+                }
+
+                if (resAlerta.ok) {
+                    const dataAlerta = await resAlerta.json();
+                    
+                    const daysStr = dataAlerta.dia_semana || "*";
+                    const daysArray = daysStr === "*" ? ["mon","tue","wed","thu","fri","sat","sun"] : daysStr.split(",");
+                    
+                    document.querySelectorAll('#alertaDiasContainer .day-btn').forEach(btn => {
+                        const isSelected = daysArray.includes(btn.dataset.day);
+                        if (isSelected) {
+                            btn.classList.add('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        } else {
+                            btn.classList.remove('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        }
+                    });
+
+                    document.getElementById('alertaHora').value = dataAlerta.hora;
+                    
+                    let minSelectAlerta = document.getElementById('alertaMinuto');
+                    let foundAlerta = Array.from(minSelectAlerta.options).some(o => o.value === dataAlerta.minuto);
+                    if(!foundAlerta) minSelectAlerta.add(new Option(dataAlerta.minuto, dataAlerta.minuto));
+                    minSelectAlerta.value = dataAlerta.minuto;
+                    
+                    document.getElementById('alertaActivo').checked = dataAlerta.activo;
+                }
+
+            } catch(e) {
+                console.error("Error cargando config", e);
+            }
+
+            const modal = document.getElementById('configModal');
+            document.body.classList.add('modal-active');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-95');
+            modal.querySelector('.modal-container').classList.add('scale-100');
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('configModal');
+            document.body.classList.remove('modal-active');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-100');
+            modal.querySelector('.modal-container').classList.add('scale-95');
+        }
+
+        function toggleDayBtn(btn) {
+            btn.classList.toggle('selected');
+            if (btn.classList.contains('selected')) {
+                btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.add('border-red-400', 'bg-red-50', 'text-red-600');
+            } else {
+                btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.remove('border-red-400', 'bg-red-50', 'text-red-600');
+            }
+        }
+
+        async function saveConfig() {
+            const payloadReporte = {
+                dia_semana: document.getElementById('configDia').value,
+                hora: document.getElementById('configHora').value,
+                minuto: document.getElementById('configMinuto').value,
+                activo: document.getElementById('configActivo').checked
+            };
+
+            const selectedBtns = document.querySelectorAll('#alertaDiasContainer .day-btn.selected');
+            const selectedDays = Array.from(selectedBtns).map(btn => btn.dataset.day);
+            const alertaDiaValue = selectedDays.length === 7 ? "*" : (selectedDays.length === 0 ? "none" : selectedDays.join(","));
+
+            if (selectedDays.length === 0 && document.getElementById('alertaActivo').checked) {
+                alert("Debe seleccionar al menos un día para las alertas si están activas.");
+                return;
+            }
+
+            const payloadAlerta = {
+                dia_semana: alertaDiaValue,
+                hora: document.getElementById('alertaHora').value,
+                minuto: document.getElementById('alertaMinuto').value,
+                activo: document.getElementById('alertaActivo').checked
+            };
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+
+                const [resRep, resAle] = await Promise.all([
+                    fetch(API_URL + '/config-reportes', { method: 'POST', headers, body: JSON.stringify(payloadReporte) }),
+                    fetch(API_URL + '/config-alertas', { method: 'POST', headers, body: JSON.stringify(payloadAlerta) })
+                ]);
+                
+                if (resRep.ok && resAle.ok) {
+                    alert("¡Configuración guardada exitosamente!");
+                    closeConfigModal();
+                } else {
+                    alert("Error guardando la configuración.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión con el servidor.");
+            }
+        }
+    </script>
+</body>
+</html>

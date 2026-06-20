@@ -377,6 +377,8 @@
                     // Guardar token
                     localStorage.setItem('pronied_token', data.access_token);
                     localStorage.setItem('pronied_user', username);
+                    localStorage.setItem('pronied_admin', data.administrador || 0);
+                    localStorage.setItem('pronied_nombre_completo', (data.nombres || '') + ' ' + (data.apellidos || ''));
 
                     // Redirigir al Dashboard
                     console.log("Redirigiendo a /reporte...");

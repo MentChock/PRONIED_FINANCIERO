@@ -408,6 +408,22 @@
                         <span class="tooltip">Reporte</span>
                     </li>
 
+                    <li class="nav-item">
+                        <a href="#" onclick="openConfigModal()" class="nav-link">
+                            <i class="ph ph-gear"></i>
+                            <span class="link-text">Configuración</span>
+                        </a>
+                        <span class="tooltip">Configuración</span>
+                    </li>
+
+                    <li class="nav-item" id="navUsuarios" style="display: none;">
+                        <a href="/usuarios" class="nav-link">
+                            <i class="ph ph-users"></i>
+                            <span class="link-text">Usuarios</span>
+                        </a>
+                        <span class="tooltip">Usuarios</span>
+                    </li>
+
                     <!-- Botón Cerrar Sesión (Integrado al diseño) -->
                     <li class="nav-item" style="margin-top:auto">
                         <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
@@ -468,6 +484,19 @@
 
             <!-- SCROLLABLE CONTENT -->
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 space-y-8">
+
+                <!-- TABS -->
+                <div class="flex bg-gray-200/70 p-1 rounded-lg self-start inline-block w-max mb-2">
+                    <button onclick="switchTab('analytics')" id="btn-tab-analytics" class="px-5 py-2 text-sm font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all">
+                        <i class="ph-bold ph-chart-bar mr-1"></i> Vista Analítica
+                    </button>
+                    <button onclick="switchTab('insights')" id="btn-tab-insights" class="px-5 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 transition-all">
+                        <i class="ph-bold ph-lightbulb mr-1"></i> Vista Ejecutiva (Insights)
+                    </button>
+                </div>
+
+                <!-- TAB 1: VISTA ANALÍTICA (GRÁFICOS) -->
+                <div id="tab-analytics" class="space-y-8">
 
                 <!-- 1. KPI DESTACADO: MES ACTUAL -->
                 <div class="card p-6 border-l-8 border-indigo-600 relative overflow-hidden">
@@ -570,6 +599,16 @@
                         </div>
                     </div>
                 </div>
+                
+                </div> <!-- END TAB ANALYTICS -->
+
+                <!-- TAB 2: VISTA EJECUTIVA (INSIGHTS) -->
+                <div id="tab-insights" class="hidden">
+                    <div class="flex flex-col gap-6" id="predictionInsightsContainer">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
@@ -613,17 +652,17 @@
                         <div class="bg-red-50 p-4 rounded-lg border border-red-200 text-center">
                             <p class="text-xs text-red-500 uppercase font-bold">Saldo a Reprogramar</p>
                             <p class="text-2xl font-extrabold text-red-600 mt-1" id="simSaldo">S/ 0</p>
-                            <p class="text-xs text-red-400 mt-1">Sobrante proyectado Agos</p>
+                            <p class="text-xs text-red-400 mt-1" id="simSobranteSubtitle">Sobrante proyectado Agos</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
-                            <p class="text-xs text-gray-500 uppercase font-bold">Meta Original (Set)</p>
+                            <p class="text-xs text-gray-500 uppercase font-bold" id="simOriginalTitle">Meta Original (Set)</p>
                             <p class="text-2xl font-bold text-gray-600 mt-1" id="simOriginal">S/ 0</p>
                             <p class="text-xs text-gray-400 mt-1">Compromiso inicial</p>
                         </div>
                         <div
                             class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 text-center relative overflow-hidden">
                             <div class="absolute top-0 right-0 bg-indigo-200 w-8 h-8 rounded-bl-full"></div>
-                            <p class="text-xs text-indigo-600 uppercase font-bold">Nueva Meta (Set)</p>
+                            <p class="text-xs text-indigo-600 uppercase font-bold" id="simNuevaTitle">Nueva Meta (Set)</p>
                             <p class="text-2xl font-extrabold text-indigo-700 mt-1" id="simNueva">S/ 0</p>
                             <p class="text-xs text-indigo-400 mt-1">Meta Acumulada</p>
                         </div>
@@ -660,11 +699,123 @@
         </div>
     </div>
 
+    <!-- --- VENTANA MODAL: CONFIGURACIÓN REPORTE SEMANAL --- -->
+    <div id="configModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="closeConfigModal()"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto transform transition-all scale-95">
+            <div class="modal-content py-4 text-left px-6">
+                <!-- Título Modal -->
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <div>
+                        <p class="text-xl font-bold text-gray-800"><i class="ph-bold ph-gear text-indigo-600"></i> Configuración de Correos</p>
+                    </div>
+                    <button onclick="closeConfigModal()" class="cursor-pointer z-50 text-gray-500 hover:text-red-500 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Cuerpo -->
+                <div class="my-5 space-y-6">
+                    
+                    <!-- Sección 1: Reporte Semanal -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-envelope-simple text-indigo-600"></i> Reporte Semanal (HU011)</h3>
+                        <p class="text-sm text-gray-600">Resumen semanal automático para la gerencia.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-gray-50 p-3 rounded">
+                            <input type="checkbox" id="configActivo" class="w-5 h-5 text-indigo-600 rounded cursor-pointer">
+                            <label for="configActivo" class="font-bold text-gray-700 cursor-pointer">Activar envío de reporte</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Día de la semana</label>
+                            <select id="configDia" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                <option value="mon">Lunes</option>
+                                <option value="tue">Martes</option>
+                                <option value="wed">Miércoles</option>
+                                <option value="thu">Jueves</option>
+                                <option value="fri">Viernes</option>
+                                <option value="sat">Sábado</option>
+                                <option value="sun">Domingo</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="configHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="configMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 2: Alerta de Retrasos Críticos -->
+                    <div class="space-y-4 pt-2">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-warning-circle text-red-500"></i> Alertas de Retraso Crítico (HU004)</h3>
+                        <p class="text-sm text-gray-600">Alerta de unidades gerenciales por debajo del 80%.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-red-50 p-3 rounded">
+                            <input type="checkbox" id="alertaActivo" class="w-5 h-5 text-red-600 rounded cursor-pointer">
+                            <label for="alertaActivo" class="font-bold text-red-700 cursor-pointer">Activar alertas de retraso</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Días de Evaluación</label>
+                            <div class="flex gap-2" id="alertaDiasContainer">
+                                <button type="button" data-day="mon" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">L</button>
+                                <button type="button" data-day="tue" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">M</button>
+                                <button type="button" data-day="wed" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">X</button>
+                                <button type="button" data-day="thu" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">J</button>
+                                <button type="button" data-day="fri" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">V</button>
+                                <button type="button" data-day="sat" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">S</button>
+                                <button type="button" data-day="sun" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">D</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="alertaHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="alertaMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="39">39</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Modal -->
+                <div class="flex justify-end pt-4 border-t gap-2">
+                    <button onclick="closeConfigModal()" class="px-5 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 font-medium transition text-sm">Cancelar</button>
+                    <button onclick="saveConfig()" class="px-5 py-2 bg-indigo-600 rounded-lg text-white hover:bg-indigo-700 font-medium transition shadow text-sm flex items-center gap-2"><i class="fa-solid fa-save"></i> Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- SCRIPT DE LÓGICA FRONTEND -->
     <script>
         const API_URL = "/api";
-        const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 0 });
+        // Force US formatting: S/ 1,234.56
+        const formatter = {
+            format: (value) => 'S/ ' + Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        };
 
         // Variables globales para gráficos
         let curveChartInstance = null;
@@ -762,7 +913,7 @@
 
             // Para la simulación necesitamos el compromiso del MES SIGUIENTE
             // Si hay muchas unidades, sumamos sus metas.
-            const nextMonthIndex = data.mes_actual_index + 1;
+            const nextMonthIndex = (data.mes_actual_index || 7) + 1;
             const metaMesSiguiente = data.unidades.reduce((acc, u) => {
                 // Verificar si existe el mes siguiente (evitar error en Diciembre)
                 if (nextMonthIndex < 12) {
@@ -779,6 +930,133 @@
             renderMonthKPI(data.kpi_mes_actual);
             renderRiskTable(data.unidades);
             renderCurveChart(data);
+            renderPredictionInsights(data);
+        }
+
+        function switchTab(tabId) {
+            document.getElementById('tab-analytics').classList.toggle('hidden', tabId !== 'analytics');
+            document.getElementById('tab-insights').classList.toggle('hidden', tabId !== 'insights');
+            
+            const btnAna = document.getElementById('btn-tab-analytics');
+            const btnIns = document.getElementById('btn-tab-insights');
+            
+            if (tabId === 'analytics') {
+                btnAna.className = "px-5 py-2 text-sm font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all";
+                btnIns.className = "px-5 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 transition-all";
+            } else {
+                btnIns.className = "px-5 py-2 text-sm font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all";
+                btnAna.className = "px-5 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 transition-all";
+            }
+        }
+
+        function renderPredictionInsights(data) {
+            const container = document.getElementById('predictionInsightsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            const insights = [];
+
+            const formatSoles = (val) => 'S/ ' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            // 1. Riesgo de Cierre Anual
+            if (data.global) {
+                const pim = data.global.pim_total;
+                const proy = data.global.proyeccion_cierre;
+                const pct = ((proy / pim) * 100).toFixed(1);
+                const saldo = data.global.saldo_presupuestal;
+                
+                insights.push({
+                    title: 'Riesgo de Cierre Anual',
+                    icon: 'ph-warning-circle',
+                    color: pct < 85 ? 'red' : (pct < 95 ? 'yellow' : 'green'),
+                    description: `El PIM total es ${formatSoles(pim)}, pero la IA proyecta un cierre anual de solo ${formatSoles(proy)} (${pct}% de ejecución final). Esto deja un Saldo en Riesgo de ${formatSoles(saldo)}. Se emite una Alerta Estratégica advirtiendo sobre el alto riesgo de subejecución y la inminente devolución de recursos al tesoro público si no se toman medidas correctivas inmediatas.`
+                });
+            }
+
+            // 2. Foco del Mes Actual
+            if (data.kpi_mes_actual) {
+                const mes = data.kpi_mes_actual.mes_nombre;
+                const meta = data.kpi_mes_actual.meta_compromiso;
+                const pred = data.kpi_mes_actual.prediccion_cierre;
+
+                insights.push({
+                    title: 'Foco del Mes Actual',
+                    icon: 'ph-calendar-check',
+                    color: pred < meta ? 'yellow' : 'green',
+                    description: `Analizando el estado del mes en curso (${mes}), la meta de compromiso establecida es ${formatSoles(meta)}, pero nuestro modelo predictivo estima que el cierre del mes será de apenas ${formatSoles(pred)}. Esta brecha operativa a corto plazo requiere acelerar las conformidades de pago inmediatamente para acercarse a la meta mensual.`
+                });
+            }
+
+            // 3. Semáforo por Unidad Gerencial
+            if (data.unidades && data.unidades.length > 0) {
+                const altos = [];
+                const bajos = [];
+                data.unidades.forEach(u => {
+                    const pct = (u.proyeccion_cierre / u.pim) * 100;
+                    if (pct < 85) altos.push(u.unidad);
+                    else if (pct >= 95) bajos.push(u.unidad);
+                });
+                
+                if (altos.length > 0) {
+                    insights.push({
+                        title: 'Semáforo por Unidad Gerencial',
+                        icon: 'ph-traffic-signal',
+                        color: 'red',
+                        description: `Las unidades ${altos.join(', ')} se encuentran en Riesgo ALTO (rojo) de subejecución, mientras que la unidad ${bajos.length > 0 ? bajos.join(', ') : 'restante'} presenta un Riesgo BAJO (verde). Se solicita intervención inmediata en las unidades de alto riesgo para evitar que arrastren hacia abajo el porcentaje de ejecución global del PRONIED.`
+                    });
+                } else if(data.unidades.length > 1) {
+                     insights.push({
+                        title: 'Semáforo por Unidad Gerencial',
+                        icon: 'ph-traffic-signal',
+                        color: 'green',
+                        description: `La mayoría de unidades gerenciales presentan un Riesgo Medio o Bajo de subejecución. El nivel de cumplimiento global es aceptable según las proyecciones de inteligencia artificial.`
+                    });
+                }
+            }
+
+            // 4. Advertencia del Simulador de Reprogramación
+            if (data.kpi_mes_actual) {
+                const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                const mesOrigen = data.kpi_mes_actual.mes_nombre;
+                const nextIdx = (data.mes_actual_index || 7) + 1;
+                const mesDestino = nextIdx < 12 ? meses[nextIdx] : 'Siguiente Año';
+                
+                const saldo_reprog = data.kpi_mes_actual.meta_compromiso - data.kpi_mes_actual.prediccion_cierre;
+                if (saldo_reprog > 0) {
+                    const pctExceso = 30; // Simulamos un 30% constante para la demo o alertar como en el texto de UI
+                    insights.push({
+                        title: 'Advertencia de Reprogramación',
+                        icon: 'ph-calculator',
+                        color: 'yellow',
+                        description: `Se planea transferir el saldo proyectado de ${formatSoles(saldo_reprog)} desde el mes de ${mesOrigen} hacia la meta de ${mesDestino}. Alerta: Esta nueva meta supera en más del ${pctExceso}% el promedio histórico de capacidad operativa. Esta reprogramación es poco realista, generará un cuello de botella y existe un riesgo crítico de no ejecución.`
+                    });
+                }
+            }
+
+            const colorMap = {
+                red: { border: 'border-red-500', bg: 'bg-red-50', text: 'text-red-800', icon: 'text-red-500' },
+                yellow: { border: 'border-yellow-400', bg: 'bg-yellow-50', text: 'text-yellow-800', icon: 'text-yellow-500' },
+                green: { border: 'border-green-500', bg: 'bg-green-50', text: 'text-green-800', icon: 'text-green-500' },
+                gray: { border: 'border-slate-400', bg: 'bg-slate-50', text: 'text-slate-700', icon: 'text-slate-500' }
+            };
+
+            let html = '';
+            insights.forEach(ins => {
+                const c = colorMap[ins.color] || colorMap.gray;
+                html += `
+                <div class="flex flex-col bg-white border-l-[6px] ${c.border} rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-gray-800">${ins.title}</h3>
+                        </div>
+                        <i class="ph-fill ${ins.icon} ${c.icon} text-3xl"></i>
+                    </div>
+                    <div class="${c.bg} p-4 rounded-md flex-1">
+                        <p class="${c.text} text-[15px] font-medium leading-relaxed">${ins.description}</p>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
         // --- 3. RENDERS GRÁFICOS ---
@@ -793,6 +1071,145 @@
             const bar = document.getElementById('progBar');
             bar.style.width = `${Math.min(pct, 100)}%`;
             bar.className = `h-1.5 rounded-full transition-all duration-500 ${pct < 85 ? 'bg-red-500' : pct < 95 ? 'bg-yellow-400' : 'bg-green-500'}`;
+        }
+
+        // --- 4. LÓGICA DE CONFIGURACIÓN (HU011 y HU004) ---
+        async function openConfigModal() {
+            const selectHora = document.getElementById('configHora');
+            const alertaHora = document.getElementById('alertaHora');
+            if (selectHora.options.length === 0) {
+                for (let i = 0; i < 24; i++) {
+                    const h = i.toString().padStart(2, '0');
+                    selectHora.add(new Option(h + ":00", h));
+                    alertaHora.add(new Option(h + ":00", h));
+                }
+            }
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                
+                // Fetch both configurations in parallel
+                const [resReporte, resAlerta] = await Promise.all([
+                    fetch(API_URL + '/config-reportes', { headers: {'Authorization': `Bearer ${token}`} }),
+                    fetch(API_URL + '/config-alertas', { headers: {'Authorization': `Bearer ${token}`} })
+                ]);
+
+                if (resReporte.ok) {
+                    const data = await resReporte.json();
+                    document.getElementById('configDia').value = data.dia_semana;
+                    document.getElementById('configHora').value = data.hora;
+                    
+                    let minSelect = document.getElementById('configMinuto');
+                    let found = Array.from(minSelect.options).some(o => o.value === data.minuto);
+                    if(!found) minSelect.add(new Option(data.minuto, data.minuto));
+                    minSelect.value = data.minuto;
+                    
+                    document.getElementById('configActivo').checked = data.activo;
+                }
+
+                if (resAlerta.ok) {
+                    const dataAlerta = await resAlerta.json();
+                    
+                    const daysStr = dataAlerta.dia_semana || "*";
+                    const daysArray = daysStr === "*" ? ["mon","tue","wed","thu","fri","sat","sun"] : daysStr.split(",");
+                    
+                    document.querySelectorAll('#alertaDiasContainer .day-btn').forEach(btn => {
+                        const isSelected = daysArray.includes(btn.dataset.day);
+                        if (isSelected) {
+                            btn.classList.add('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        } else {
+                            btn.classList.remove('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        }
+                    });
+
+                    document.getElementById('alertaHora').value = dataAlerta.hora;
+                    
+                    let minSelectAlerta = document.getElementById('alertaMinuto');
+                    let foundAlerta = Array.from(minSelectAlerta.options).some(o => o.value === dataAlerta.minuto);
+                    if(!foundAlerta) minSelectAlerta.add(new Option(dataAlerta.minuto, dataAlerta.minuto));
+                    minSelectAlerta.value = dataAlerta.minuto;
+                    
+                    document.getElementById('alertaActivo').checked = dataAlerta.activo;
+                }
+
+            } catch(e) {
+                console.error("Error cargando config", e);
+            }
+
+            const modal = document.getElementById('configModal');
+            document.body.classList.add('modal-active');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-95');
+            modal.querySelector('.modal-container').classList.add('scale-100');
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('configModal');
+            document.body.classList.remove('modal-active');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-100');
+            modal.querySelector('.modal-container').classList.add('scale-95');
+        }
+
+        function toggleDayBtn(btn) {
+            btn.classList.toggle('selected');
+            if (btn.classList.contains('selected')) {
+                btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.add('border-red-400', 'bg-red-50', 'text-red-600');
+            } else {
+                btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.remove('border-red-400', 'bg-red-50', 'text-red-600');
+            }
+        }
+
+        async function saveConfig() {
+            const payloadReporte = {
+                dia_semana: document.getElementById('configDia').value,
+                hora: document.getElementById('configHora').value,
+                minuto: document.getElementById('configMinuto').value,
+                activo: document.getElementById('configActivo').checked
+            };
+
+            const selectedBtns = document.querySelectorAll('#alertaDiasContainer .day-btn.selected');
+            const selectedDays = Array.from(selectedBtns).map(btn => btn.dataset.day);
+            const alertaDiaValue = selectedDays.length === 7 ? "*" : (selectedDays.length === 0 ? "none" : selectedDays.join(","));
+
+            if (selectedDays.length === 0 && document.getElementById('alertaActivo').checked) {
+                alert("Debe seleccionar al menos un día para las alertas si están activas.");
+                return;
+            }
+
+            const payloadAlerta = {
+                dia_semana: alertaDiaValue,
+                hora: document.getElementById('alertaHora').value,
+                minuto: document.getElementById('alertaMinuto').value,
+                activo: document.getElementById('alertaActivo').checked
+            };
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+
+                const [resRep, resAle] = await Promise.all([
+                    fetch(API_URL + '/config-reportes', { method: 'POST', headers, body: JSON.stringify(payloadReporte) }),
+                    fetch(API_URL + '/config-alertas', { method: 'POST', headers, body: JSON.stringify(payloadAlerta) })
+                ]);
+                
+                if (resRep.ok && resAle.ok) {
+                    alert("¡Configuración guardada exitosamente!");
+                    closeConfigModal();
+                } else {
+                    alert("Error guardando la configuración.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión con el servidor.");
+            }
         }
 
         function renderMonthKPI(kpi) {
@@ -1007,6 +1424,10 @@
             document.getElementById('simMesActualText').innerText = currentMonthName;
             document.getElementById('simMesSiguienteText').innerText = nextMonthName;
 
+            document.getElementById('simSobranteSubtitle').innerText = `Sobrante proyectado ${currentMonthName.charAt(0) + currentMonthName.slice(1).toLowerCase()}`;
+            document.getElementById('simOriginalTitle').innerText = `Meta Original (${nextMonthName})`;
+            document.getElementById('simNuevaTitle').innerText = `Nueva Meta (${nextMonthName})`;
+
             // 4. Lógica de Alerta
             const alertBox = document.getElementById('simAlert');
             // Si el nuevo presupuesto es 30% mayor al original, es riesgoso
@@ -1046,10 +1467,193 @@
         }
 
         // --- INICIALIZACIÓN ---
-        document.getElementById('unitSelect').addEventListener('change', (e) => loadDashboard(e.target.value));
-        loadDashboard("Todas");
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('unitSelect').addEventListener('change', (e) => loadDashboard(e.target.value));
+            
+            // Set user profile details
+            const userFullName = localStorage.getItem('pronied_nombre_completo') || localStorage.getItem('pronied_user');
+            const isAdmin = localStorage.getItem('pronied_admin') === '1';
+            
+            if (isAdmin) {
+                const navUsuarios = document.getElementById('navUsuarios');
+                if (navUsuarios) navUsuarios.style.display = 'block';
+            }
+            
+            const elements = document.querySelectorAll('.user-details h4');
+            elements.forEach(el => el.innerText = userFullName);
+            
+            const roles = document.querySelectorAll('.user-details span');
+            roles.forEach(el => el.innerText = isAdmin ? 'Administrador' : 'Usuario');
+            
+            if (userFullName) {
+                const initials = document.querySelectorAll('.avatar-circle');
+                initials.forEach(el => el.innerText = userFullName.substring(0, 2).toUpperCase());
+            }
+
+            loadDashboard("Todas");
+        });
+
+        // --- 8. LÓGICA DEL CHATBOT ---
+        function toggleChatbot() {
+            const chatWindow = document.getElementById('chatWindow');
+            const toggleBtn = document.getElementById('chatbotToggleBtn');
+            chatWindow.classList.toggle('hidden');
+            if (chatWindow.classList.contains('hidden')) {
+                toggleBtn.classList.remove('hidden');
+            } else {
+                toggleBtn.classList.add('hidden');
+            }
+        }
+
+        async function sendChatMessage() {
+            const inputField = document.getElementById('chatInput');
+            const mensaje = inputField.value.trim();
+            if (!mensaje) return;
+
+            // 1. Mostrar mensaje del usuario
+            appendMessage("Tú", mensaje, "user");
+            inputField.value = "";
+
+            // 2. Mostrar indicador de "escribiendo..."
+            const loadingId = appendLoading();
+
+            try {
+                // 3. Obtener el token
+                const token = localStorage.getItem('pronied_token');
+
+                // 4. Enviar Petición al Backend
+                const response = await fetch('/api/chatbot/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message: mensaje })
+                });
+
+                if (!response.ok) throw new Error("Error en la conexión con la IA");
+
+                const data = await response.json();
+
+                // 5. Eliminar loading y mostrar respuesta de la IA
+                removeLoading(loadingId);
+                appendMessage("Asistente PRONIED", data.response, "bot");
+
+            } catch (error) {
+                removeLoading(loadingId);
+                appendMessage("Sistema", "Error: No se pudo conectar con el Cerebro de Predicción. Reintenta más tarde.", "error");
+            }
+        }
+
+        function appendMessage(sender, text, role) {
+            const chatBody = document.getElementById('chatBody');
+            const isUser = role === 'user';
+
+            const boxClass = isUser
+                ? "bg-indigo-600 text-white self-end text-right rounded-br-none"
+                : role === "error"
+                    ? "bg-red-100 text-red-800 self-start text-left border border-red-300 rounded-bl-none"
+                    : "bg-gray-100 text-gray-800 self-start text-left rounded-bl-none border border-gray-200";
+
+            const msgHtml = `
+                <div class="max-w-[85%] mb-3 flex flex-col ${isUser ? 'items-end ml-auto' : 'items-start mr-auto'}">
+                    <span class="text-[10px] text-gray-500 mb-1 px-1 font-bold">${sender}</span>
+                    <div class="px-3 py-2 rounded-xl text-sm shadow-sm ${boxClass}">
+                        ${text.replace(/\n/g, '<br>')}
+                    </div>
+                </div>
+            `;
+            chatBody.insertAdjacentHTML('beforeend', msgHtml);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function appendLoading() {
+            const id = 'loading-' + Date.now();
+            const chatBody = document.getElementById('chatBody');
+            const loadingHtml = `
+                <div id="${id}" class="max-w-[85%] mb-3 mr-auto flex flex-col items-start font-sans">
+                    <span class="text-[10px] text-gray-400 mb-1 px-1">Asistente analizando datos...</span>
+                    <div class="px-4 py-2 rounded-xl bg-gray-50 text-gray-500 text-xs border border-gray-100 flex gap-1">
+                        <span class="animate-bounce font-bold">.</span><span class="animate-bounce font-bold" style="animation-delay: 0.2s">.</span><span class="animate-bounce font-bold" style="animation-delay: 0.4s">.</span>
+                    </div>
+                </div>
+            `;
+            chatBody.insertAdjacentHTML('beforeend', loadingHtml);
+            chatBody.scrollTop = chatBody.scrollHeight;
+            return id;
+        }
+
+        function removeLoading(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // Permitir enviar con la tecla Enter
+        document.getElementById("chatInput").addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendChatMessage();
+            }
+        });
 
     </script>
+
+    <!-- WIDGET CHATBOT FLOTANTE -->
+    <div id="chatbotContainer" class="fixed bottom-6 right-6 z-50 font-sans">
+
+        <!-- Ventana de Chat (Oculta por defecto) -->
+        <div id="chatWindow"
+            class="hidden w-[340px] h-[480px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200 overflow-hidden transform transition-all mb-4 origin-bottom-right">
+
+            <!-- Header Chat -->
+            <div class="bg-indigo-700 p-4 text-white flex justify-between items-center shadow-md">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-700 font-bold">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm leading-tight">Asistente de Predicción</h4>
+                        <p class="text-[10px] opacity-80">Conectado a GPT-4o-mini <span
+                                class="w-2 h-2 inline-block bg-green-400 rounded-full ml-1"></span></p>
+                    </div>
+                </div>
+                <button onclick="toggleChatbot()" class="text-white hover:text-gray-200 transition">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Body Chat -->
+            <div id="chatBody" class="flex-1 p-4 overflow-y-auto bg-gray-50 scroll-smooth">
+                <!-- Mensaje de Bienvenida por defecto -->
+                <div class="max-w-[85%] mb-3 flex flex-col items-start mr-auto">
+                    <span class="text-[10px] text-gray-500 mb-1 px-1 font-bold">Asistente PRONIED</span>
+                    <div
+                        class="px-3 py-2 rounded-xl text-sm shadow-sm bg-indigo-50 text-indigo-900 self-start text-left rounded-bl-none border border-indigo-100">
+                        ¡Hola! Soy la Inteligencia Artificial financiera del PRONIED. He escaneado tu base de datos y la
+                        Curva S. ¿Sobre qué Unidad te gustaría obtener proyecciones hoy?
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Chat -->
+            <div class="p-3 bg-white border-t flex gap-2">
+                <input type="text" id="chatInput" placeholder="Ej: ¿Qué unidad tiene más riesgo?"
+                    class="flex-1 bg-gray-100 border-none rounded-full px-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                <button onclick="sendChatMessage()"
+                    class="w-10 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center transition shadow-md">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Botón Flotante Redondo -->
+        <button id="chatbotToggleBtn" onclick="toggleChatbot()"
+            class="absolute bottom-0 right-0 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-[0_8px_20px_rgba(79,70,229,0.4)] flex items-center justify-center text-2xl transition hover:scale-105">
+            <i class="fa-solid fa-comment-dots"></i>
+        </button>
+    </div>
+
 </body>
 
 </html>

@@ -1,0 +1,15 @@
+# Archivos de datos y Excel
+*.xlsx
+*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+env/
+
+# OS / Mac
+.DS_Store

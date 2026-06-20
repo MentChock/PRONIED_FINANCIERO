@@ -491,6 +491,64 @@
         </div>
     </div>
 
+    <!-- --- VENTANA MODAL: CONFIGURACIÓN REPORTE SEMANAL --- -->
+    <div id="configModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="closeConfigModal()"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto transform transition-all scale-95">
+            <div class="modal-content py-4 text-left px-6">
+                <!-- Título Modal -->
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <div>
+                        <p class="text-xl font-bold text-gray-800"><i class="ph-bold ph-gear text-indigo-600"></i> Configuración de Correos</p>
+                    </div>
+                    <button onclick="closeConfigModal()" class="cursor-pointer z-50 text-gray-500 hover:text-red-500 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Cuerpo -->
+                <div class="my-5 space-y-6">
+                    
+                    <!-- Sección 1: Reporte Semanal -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-envelope-simple text-indigo-600"></i> Reporte Semanal (HU011)</h3>
+                        <p class="text-sm text-gray-600">Resumen semanal automático para la gerencia.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-gray-50 p-3 rounded">
+                            <input type="checkbox" id="configActivo" class="w-5 h-5 text-indigo-600 rounded cursor-pointer">
+                            <label for="configActivo" class="font-bold text-gray-700 cursor-pointer">Activar envío de reporte</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Día de la semana</label>
+                            <select id="configDia" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                <option value="mon">Lunes</option>
+                                <option value="tue">Martes</option>
+                                <option value="wed">Miércoles</option>
+                                <option value="thu">Jueves</option>
+                                <option value="fri">Viernes</option>
+                                <option value="sat">Sábado</option>
+                                <option value="sun">Domingo</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="configHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="configMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
     <script>
         // --- SIDEBAR TOGGLE ---
         function toggleSidebar() {
@@ -608,6 +666,145 @@
                 // But since we reset input, we should disable it.
                 btn.disabled = true;
                 btn.innerHTML = originalText;
+            }
+        }
+    
+// --- 4. LÓGICA DE CONFIGURACIÓN (HU011 y HU004) ---
+        async function openConfigModal() {
+            const selectHora = document.getElementById('configHora');
+            const alertaHora = document.getElementById('alertaHora');
+            if (selectHora.options.length === 0) {
+                for (let i = 0; i < 24; i++) {
+                    const h = i.toString().padStart(2, '0');
+                    selectHora.add(new Option(h + ":00", h));
+                    alertaHora.add(new Option(h + ":00", h));
+                }
+            }
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                
+                // Fetch both configurations in parallel
+                const [resReporte, resAlerta] = await Promise.all([
+                    fetch(API_URL + '/config-reportes', { headers: {'Authorization': `Bearer ${token}`} }),
+                    fetch(API_URL + '/config-alertas', { headers: {'Authorization': `Bearer ${token}`} })
+                ]);
+
+                if (resReporte.ok) {
+                    const data = await resReporte.json();
+                    document.getElementById('configDia').value = data.dia_semana;
+                    document.getElementById('configHora').value = data.hora;
+                    
+                    let minSelect = document.getElementById('configMinuto');
+                    let found = Array.from(minSelect.options).some(o => o.value === data.minuto);
+                    if(!found) minSelect.add(new Option(data.minuto, data.minuto));
+                    minSelect.value = data.minuto;
+                    
+                    document.getElementById('configActivo').checked = data.activo;
+                }
+
+                if (resAlerta.ok) {
+                    const dataAlerta = await resAlerta.json();
+                    
+                    const daysStr = dataAlerta.dia_semana || "*";
+                    const daysArray = daysStr === "*" ? ["mon","tue","wed","thu","fri","sat","sun"] : daysStr.split(",");
+                    
+                    document.querySelectorAll('#alertaDiasContainer .day-btn').forEach(btn => {
+                        const isSelected = daysArray.includes(btn.dataset.day);
+                        if (isSelected) {
+                            btn.classList.add('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        } else {
+                            btn.classList.remove('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        }
+                    });
+
+                    document.getElementById('alertaHora').value = dataAlerta.hora;
+                    
+                    let minSelectAlerta = document.getElementById('alertaMinuto');
+                    let foundAlerta = Array.from(minSelectAlerta.options).some(o => o.value === dataAlerta.minuto);
+                    if(!foundAlerta) minSelectAlerta.add(new Option(dataAlerta.minuto, dataAlerta.minuto));
+                    minSelectAlerta.value = dataAlerta.minuto;
+                    
+                    document.getElementById('alertaActivo').checked = dataAlerta.activo;
+                }
+
+            } catch(e) {
+                console.error("Error cargando config", e);
+            }
+
+            const modal = document.getElementById('configModal');
+            document.body.classList.add('modal-active');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-95');
+            modal.querySelector('.modal-container').classList.add('scale-100');
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('configModal');
+            document.body.classList.remove('modal-active');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-100');
+            modal.querySelector('.modal-container').classList.add('scale-95');
+        }
+
+        function toggleDayBtn(btn) {
+            btn.classList.toggle('selected');
+            if (btn.classList.contains('selected')) {
+                btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.add('border-red-400', 'bg-red-50', 'text-red-600');
+            } else {
+                btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.remove('border-red-400', 'bg-red-50', 'text-red-600');
+            }
+        }
+
+        async function saveConfig() {
+            const payloadReporte = {
+                dia_semana: document.getElementById('configDia').value,
+                hora: document.getElementById('configHora').value,
+                minuto: document.getElementById('configMinuto').value,
+                activo: document.getElementById('configActivo').checked
+            };
+
+            const selectedBtns = document.querySelectorAll('#alertaDiasContainer .day-btn.selected');
+            const selectedDays = Array.from(selectedBtns).map(btn => btn.dataset.day);
+            const alertaDiaValue = selectedDays.length === 7 ? "*" : (selectedDays.length === 0 ? "none" : selectedDays.join(","));
+
+            if (selectedDays.length === 0 && document.getElementById('alertaActivo').checked) {
+                alert("Debe seleccionar al menos un día para las alertas si están activas.");
+                return;
+            }
+
+            const payloadAlerta = {
+                dia_semana: alertaDiaValue,
+                hora: document.getElementById('alertaHora').value,
+                minuto: document.getElementById('alertaMinuto').value,
+                activo: document.getElementById('alertaActivo').checked
+            };
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+
+                const [resRep, resAle] = await Promise.all([
+                    fetch(API_URL + '/config-reportes', { method: 'POST', headers, body: JSON.stringify(payloadReporte) }),
+                    fetch(API_URL + '/config-alertas', { method: 'POST', headers, body: JSON.stringify(payloadAlerta) })
+                ]);
+                
+                if (resRep.ok && resAle.ok) {
+                    alert("¡Configuración guardada exitosamente!");
+                    closeConfigModal();
+                } else {
+                    alert("Error guardando la configuración.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión con el servidor.");
             }
         }
     </script>

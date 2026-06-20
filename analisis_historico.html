@@ -9,7 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow: hidden !important; }
+        
         /* --- VARIABLES DE SISTEMA --- */
         :root {
             --pronied-red: #D91023;
@@ -390,7 +394,22 @@
                         <span class="tooltip">Reporte</span>
                     </li>
 
-                    <li class="nav-item" style="margin-top:auto">
+                    
+                    <li class="nav-item">
+                        <a href="#" onclick="openConfigModal()" class="nav-link">
+                            <i class="ph ph-gear"></i>
+                            <span class="link-text">Configuración</span>
+                        </a>
+                        <span class="tooltip">Configuración</span>
+                    </li>
+                    <li class="nav-item" id="navUsuarios" style="display: none;">
+                        <a href="/usuarios" class="nav-link">
+                            <i class="ph ph-users"></i>
+                            <span class="link-text">Usuarios</span>
+                        </a>
+                        <span class="tooltip">Usuarios</span>
+                    </li>
+<li class="nav-item" style="margin-top:auto">
                         <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
                             <i class="ph ph-sign-out text-red-400"></i>
                             <span class="link-text text-red-100">Cerrar Sesión</span>
@@ -409,6 +428,29 @@
             </div>
         </nav>
 
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const userFullName = localStorage.getItem('pronied_nombre_completo') || localStorage.getItem('pronied_user');
+                const isAdmin = localStorage.getItem('pronied_admin') === '1';
+                
+                if (isAdmin) {
+                    const navUsuarios = document.getElementById('navUsuarios');
+                    if (navUsuarios) navUsuarios.style.display = 'block';
+                }
+                
+                const elements = document.querySelectorAll('.user-details h4');
+                elements.forEach(el => el.innerText = userFullName);
+                
+                const roles = document.querySelectorAll('.user-details span');
+                roles.forEach(el => el.innerText = isAdmin ? 'Administrador' : 'Usuario');
+                
+                if (userFullName) {
+                    const initials = document.querySelectorAll('.avatar-circle');
+                    initials.forEach(el => el.innerText = userFullName.substring(0, 2).toUpperCase());
+                }
+            });
+        </script>
+
         <!-- CONTENIDO PRINCIPAL -->
         <div class="main-content flex flex-col bg-gray-100">
 
@@ -426,18 +468,31 @@
             <!-- CONTENIDO SCROLLABLE -->
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 space-y-6">
 
-                <!-- SECCIÓN: ANÁLISIS HISTÓRICO -->
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <i class="ph-bold ph-clock-counter-clockwise text-indigo-600"></i>
-                        Análisis Histórico de Eficiencia
-                    </h2>
-                    <p class="text-sm text-gray-500 mt-1">
-                        Evaluación retrospectiva del gasto (2020-2024) para identificar patrones y brechas.
-                    </p>
+                <!-- SECCIÓN: ANÁLISIS HISTÓRICO CON TABS -->
+                <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="ph-bold ph-clock-counter-clockwise text-indigo-600"></i>
+                            Análisis Histórico de Eficiencia
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Evaluación retrospectiva del gasto (2020-2024) para identificar patrones y brechas.
+                        </p>
+                    </div>
+
+                    <!-- TABS -->
+                    <div class="flex bg-gray-200/70 p-1 rounded-lg self-start">
+                        <button onclick="switchTab('analytics')" id="btn-tab-analytics" class="px-5 py-2 text-sm font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all">
+                            <i class="ph-bold ph-chart-bar mr-1"></i> Vista Analítica
+                        </button>
+                        <button onclick="switchTab('insights')" id="btn-tab-insights" class="px-5 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 transition-all">
+                            <i class="ph-bold ph-lightbulb mr-1"></i> Vista Ejecutiva (Insights)
+                        </button>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- TAB 1: VISTA ANALÍTICA (GRÁFICOS) -->
+                <div id="tab-analytics" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- 1. GRÁFICO TENDENCIA -->
                     <div class="lg:col-span-2 card p-6 flex flex-col">
                         <div class="flex justify-between items-center mb-6">
@@ -500,6 +555,13 @@
                     </div>
                 </div>
 
+                <!-- TAB 2: VISTA EJECUTIVA (INSIGHTS) -->
+                <div id="tab-insights" class="hidden">
+                    <div class="flex flex-col gap-6" id="historicalInsightsContainer">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
@@ -522,9 +584,125 @@
 
                 const data = await response.json();
                 renderHistoricalSection(data);
+                renderHistoricalInsights(data);
             } catch (error) {
                 console.error("Error loading historical data:", error);
             }
+        }
+
+        function switchTab(tabId) {
+            document.getElementById('tab-analytics').classList.toggle('hidden', tabId !== 'analytics');
+            document.getElementById('tab-insights').classList.toggle('hidden', tabId !== 'insights');
+            
+            const btnAna = document.getElementById('btn-tab-analytics');
+            const btnIns = document.getElementById('btn-tab-insights');
+            
+            if (tabId === 'analytics') {
+                btnAna.className = "px-5 py-2 text-sm font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all";
+                btnIns.className = "px-5 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 transition-all";
+            } else {
+                btnIns.className = "px-5 py-2 text-sm font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all";
+                btnAna.className = "px-5 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 transition-all";
+            }
+        }
+
+        function renderHistoricalInsights(data) {
+            const container = document.getElementById('historicalInsightsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            const insights = [];
+
+            // 1. Evolución Histórica (PIM vs Devengado)
+            if (data.historical && data.historical.length > 0) {
+                let maxHist = { anio: 0, eficacia: -1 };
+                let minHist = { anio: 0, eficacia: 101 };
+                data.historical.forEach(h => {
+                    if (h.eficacia > maxHist.eficacia) maxHist = h;
+                    if (h.eficacia < minHist.eficacia) minHist = h;
+                });
+                const firstYear = data.historical[0];
+                const lastYear = data.historical[data.historical.length - 1];
+                const tendencia = lastYear.eficacia >= firstYear.eficacia ? 'al alza (positiva)' : 'a la baja (negativa)';
+                const conclusion = lastYear.eficacia >= firstYear.eficacia ? 'mejorando su capacidad de gasto estructural' : 'empeorando su capacidad de gasto estructural';
+
+                insights.push({
+                    title: 'Evolución Histórica (PIM vs Devengado)',
+                    icon: 'ph-trend-up',
+                    color: lastYear.eficacia >= firstYear.eficacia ? 'green' : 'yellow',
+                    description: `El año con mejor ejecución fue ${maxHist.anio} alcanzando un ${maxHist.eficacia}% de eficacia, mientras que el punto más bajo fue en ${minHist.anio} con ${minHist.eficacia}%. Observando que la tendencia de los últimos años es ${tendencia}, se concluye que la entidad está ${conclusion} frente al Presupuesto Institucional Modificado (PIM).`
+                });
+            }
+
+            // 2. Alerta de Estacionalidad
+            if (data.seasonality && data.seasonality.length === 12) {
+                let maxMes = { mes: '', promedio: -1 };
+                data.seasonality.forEach(m => {
+                    if (m.promedio > maxMes.promedio) maxMes = m;
+                });
+
+                const q1 = data.seasonality.slice(0, 3).reduce((sum, item) => sum + item.promedio, 0);
+                const q2 = data.seasonality.slice(3, 6).reduce((sum, item) => sum + item.promedio, 0);
+                const q3 = data.seasonality.slice(6, 9).reduce((sum, item) => sum + item.promedio, 0);
+                const q4 = data.seasonality.slice(9, 12).reduce((sum, item) => sum + item.promedio, 0);
+
+                const qs = [
+                    { name: 'Primer Trimestre', val: q1 },
+                    { name: 'Segundo Trimestre', val: q2 },
+                    { name: 'Tercer Trimestre', val: q3 },
+                    { name: 'Cuarto Trimestre', val: q4 }
+                ];
+                qs.sort((a, b) => a.val - b.val);
+                const qCritico = qs[0]; // El de menor ejecución
+
+                insights.push({
+                    title: 'Alerta de Estacionalidad',
+                    icon: 'ph-calendar-warning',
+                    color: 'yellow',
+                    description: `El mes donde históricamente se concentra el mayor gasto es ${maxMes.mes} con un ${maxMes.promedio.toFixed(1)}%. Sin embargo, hay una alerta de patrón: El ${qCritico.name} históricamente ejecuta solo el ${qCritico.val.toFixed(1)}% del presupuesto anual. Se recomienda fuertemente destrabar procesos administrativos tempranos para no acumular la presión del gasto en el último semestre.`
+                });
+            }
+
+            // 3. Ranking Histórico de Eficiencia
+            if (data.ranking && data.ranking.length > 0) {
+                const sortedRank = [...data.ranking].sort((a, b) => b.eficacia_promedio - a.eficacia_promedio);
+                const rTop = sortedRank[0];
+                const rBottom = sortedRank[sortedRank.length - 1];
+                
+                const getTendenciaText = (ef) => ef > 90 ? 'de mejora continua' : (ef > 80 ? 'estable' : 'de caída');
+
+                insights.push({
+                    title: 'Ranking Histórico de Eficiencia',
+                    icon: 'ph-ranking',
+                    color: rBottom.eficacia_promedio < 60 ? 'red' : 'gray',
+                    description: `La unidad líder es ${rTop.unidad} con una eficacia promedio del ${rTop.eficacia_promedio.toFixed(1)}% y tendencia ${getTendenciaText(rTop.eficacia_promedio)}. En contraste crítico, la unidad ${rBottom.unidad} promedia solo un ${rBottom.eficacia_promedio.toFixed(1)}% con tendencia ${getTendenciaText(rBottom.eficacia_promedio)}. El desempeño de la unidad con menor eficiencia es un problema estructural (histórico) y no un retraso aislado, por lo que se sugiere una intervención interna.`
+                });
+            }
+
+            const colorMap = {
+                red: { border: 'border-red-500', bg: 'bg-red-50', text: 'text-red-800', icon: 'text-red-500' },
+                yellow: { border: 'border-yellow-400', bg: 'bg-yellow-50', text: 'text-yellow-800', icon: 'text-yellow-500' },
+                green: { border: 'border-green-500', bg: 'bg-green-50', text: 'text-green-800', icon: 'text-green-500' },
+                gray: { border: 'border-slate-400', bg: 'bg-slate-50', text: 'text-slate-700', icon: 'text-slate-500' }
+            };
+
+            let html = '';
+            insights.forEach(ins => {
+                const c = colorMap[ins.color] || colorMap.gray;
+                html += `
+                <div class="flex flex-col bg-white border-l-[6px] ${c.border} rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-gray-800">${ins.title}</h3>
+                        </div>
+                        <i class="ph-fill ${ins.icon} ${c.icon} text-3xl"></i>
+                    </div>
+                    <div class="${c.bg} p-4 rounded-md flex-1">
+                        <p class="${c.text} text-[15px] font-medium leading-relaxed">${ins.description}</p>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
         function renderHistoricalSection(data) {
@@ -579,6 +757,26 @@
                             position: 'right',
                             ticks: { callback: (val) => val + '%' },
                             grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        if (context.dataset.yAxisID === 'y') {
+                                            label += 'S/ ' + context.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                        } else {
+                                            label += context.parsed.y + '%';
+                                        }
+                                    }
+                                    return label;
+                                }
+                            }
                         }
                     }
                 }
@@ -646,6 +844,257 @@
             });
         }
     </script>
+
+    <!-- --- VENTANA MODAL: CONFIGURACIÓN REPORTE SEMANAL --- -->
+    <div id="configModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="closeConfigModal()"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto transform transition-all scale-95">
+            <div class="modal-content py-4 text-left px-6">
+                <!-- Título Modal -->
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <div>
+                        <p class="text-xl font-bold text-gray-800"><i class="ph-bold ph-gear text-indigo-600"></i> Configuración de Correos</p>
+                    </div>
+                    <button onclick="closeConfigModal()" class="cursor-pointer z-50 text-gray-500 hover:text-red-500 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Cuerpo -->
+                <div class="my-5 space-y-6">
+                    
+                    <!-- Sección 1: Reporte Semanal -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-envelope-simple text-indigo-600"></i> Reporte Semanal (HU011)</h3>
+                        <p class="text-sm text-gray-600">Resumen semanal automático para la gerencia.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-gray-50 p-3 rounded">
+                            <input type="checkbox" id="configActivo" class="w-5 h-5 text-indigo-600 rounded cursor-pointer">
+                            <label for="configActivo" class="font-bold text-gray-700 cursor-pointer">Activar envío de reporte</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Día de la semana</label>
+                            <select id="configDia" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                <option value="mon">Lunes</option>
+                                <option value="tue">Martes</option>
+                                <option value="wed">Miércoles</option>
+                                <option value="thu">Jueves</option>
+                                <option value="fri">Viernes</option>
+                                <option value="sat">Sábado</option>
+                                <option value="sun">Domingo</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="configHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="configMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 2: Alerta de Retrasos Críticos -->
+                    <div class="space-y-4 pt-2">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-warning-circle text-red-500"></i> Alertas de Retraso Crítico (HU004)</h3>
+                        <p class="text-sm text-gray-600">Alerta de unidades gerenciales por debajo del 80%.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-red-50 p-3 rounded">
+                            <input type="checkbox" id="alertaActivo" class="w-5 h-5 text-red-600 rounded cursor-pointer">
+                            <label for="alertaActivo" class="font-bold text-red-700 cursor-pointer">Activar alertas de retraso</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Días de Evaluación</label>
+                            <div class="flex gap-2" id="alertaDiasContainer">
+                                <button type="button" data-day="mon" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">L</button>
+                                <button type="button" data-day="tue" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">M</button>
+                                <button type="button" data-day="wed" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">X</button>
+                                <button type="button" data-day="thu" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">J</button>
+                                <button type="button" data-day="fri" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">V</button>
+                                <button type="button" data-day="sat" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">S</button>
+                                <button type="button" data-day="sun" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">D</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="alertaHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="alertaMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="39">39</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Modal -->
+                <div class="flex justify-end pt-4 border-t gap-2">
+                    <button onclick="closeConfigModal()" class="px-5 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 font-medium transition text-sm">Cancelar</button>
+                    <button onclick="saveConfig()" class="px-5 py-2 bg-indigo-600 rounded-lg text-white hover:bg-indigo-700 font-medium transition shadow text-sm flex items-center gap-2"><i class="fa-solid fa-save"></i> Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LÓGICA DE CONFIGURACIÓN (HU011 y HU004) ---
+        async function openConfigModal() {
+            const selectHora = document.getElementById('configHora');
+            const alertaHora = document.getElementById('alertaHora');
+            if (selectHora.options.length === 0) {
+                for (let i = 0; i < 24; i++) {
+                    const h = i.toString().padStart(2, '0');
+                    selectHora.add(new Option(h + ":00", h));
+                    alertaHora.add(new Option(h + ":00", h));
+                }
+            }
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                
+                // Fetch both configurations in parallel
+                const [resReporte, resAlerta] = await Promise.all([
+                    fetch('/api/config-reportes', { headers: {'Authorization': `Bearer ${token}`} }),
+                    fetch('/api/config-alertas', { headers: {'Authorization': `Bearer ${token}`} })
+                ]);
+
+                if (resReporte.ok) {
+                    const data = await resReporte.json();
+                    document.getElementById('configDia').value = data.dia_semana;
+                    document.getElementById('configHora').value = data.hora;
+                    
+                    let minSelect = document.getElementById('configMinuto');
+                    let found = Array.from(minSelect.options).some(o => o.value === data.minuto);
+                    if(!found) minSelect.add(new Option(data.minuto, data.minuto));
+                    minSelect.value = data.minuto;
+                    
+                    document.getElementById('configActivo').checked = data.activo;
+                }
+
+                if (resAlerta.ok) {
+                    const dataAlerta = await resAlerta.json();
+                    
+                    const daysStr = dataAlerta.dia_semana || "*";
+                    const daysArray = daysStr === "*" ? ["mon","tue","wed","thu","fri","sat","sun"] : daysStr.split(",");
+                    
+                    document.querySelectorAll('#alertaDiasContainer .day-btn').forEach(btn => {
+                        const isSelected = daysArray.includes(btn.dataset.day);
+                        if (isSelected) {
+                            btn.classList.add('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        } else {
+                            btn.classList.remove('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        }
+                    });
+
+                    document.getElementById('alertaHora').value = dataAlerta.hora;
+                    
+                    let minSelectAlerta = document.getElementById('alertaMinuto');
+                    let foundAlerta = Array.from(minSelectAlerta.options).some(o => o.value === dataAlerta.minuto);
+                    if(!foundAlerta) minSelectAlerta.add(new Option(dataAlerta.minuto, dataAlerta.minuto));
+                    minSelectAlerta.value = dataAlerta.minuto;
+                    
+                    document.getElementById('alertaActivo').checked = dataAlerta.activo;
+                }
+
+            } catch(e) {
+                console.error("Error cargando config", e);
+            }
+
+            const modal = document.getElementById('configModal');
+            document.body.classList.add('modal-active');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-95');
+            modal.querySelector('.modal-container').classList.add('scale-100');
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('configModal');
+            document.body.classList.remove('modal-active');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-100');
+            modal.querySelector('.modal-container').classList.add('scale-95');
+        }
+
+        function toggleDayBtn(btn) {
+            btn.classList.toggle('selected');
+            if (btn.classList.contains('selected')) {
+                btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.add('border-red-400', 'bg-red-50', 'text-red-600');
+            } else {
+                btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.remove('border-red-400', 'bg-red-50', 'text-red-600');
+            }
+        }
+
+        async function saveConfig() {
+            const payloadReporte = {
+                dia_semana: document.getElementById('configDia').value,
+                hora: document.getElementById('configHora').value,
+                minuto: document.getElementById('configMinuto').value,
+                activo: document.getElementById('configActivo').checked
+            };
+
+            const selectedBtns = document.querySelectorAll('#alertaDiasContainer .day-btn.selected');
+            const selectedDays = Array.from(selectedBtns).map(btn => btn.dataset.day);
+            const alertaDiaValue = selectedDays.length === 7 ? "*" : (selectedDays.length === 0 ? "none" : selectedDays.join(","));
+
+            if (selectedDays.length === 0 && document.getElementById('alertaActivo').checked) {
+                alert("Debe seleccionar al menos un día para las alertas si están activas.");
+                return;
+            }
+
+            const payloadAlerta = {
+                dia_semana: alertaDiaValue,
+                hora: document.getElementById('alertaHora').value,
+                minuto: document.getElementById('alertaMinuto').value,
+                activo: document.getElementById('alertaActivo').checked
+            };
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+
+                const [resRep, resAle] = await Promise.all([
+                    fetch('/api/config-reportes', { method: 'POST', headers, body: JSON.stringify(payloadReporte) }),
+                    fetch('/api/config-alertas', { method: 'POST', headers, body: JSON.stringify(payloadAlerta) })
+                ]);
+                
+                if (resRep.ok && resAle.ok) {
+                    alert("¡Configuración guardada exitosamente!");
+                    closeConfigModal();
+                } else {
+                    alert("Error guardando la configuración.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión con el servidor.");
+            }
+        }
+    </script>
 </body>
+
 
 </html>

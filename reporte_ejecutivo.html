@@ -8,7 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow: hidden !important; }
+        
         /* --- VARIABLES DE SISTEMA --- */
         :root {
             --pronied-red: #D91023;
@@ -372,7 +376,22 @@
 
 
 
-                    <li class="nav-item" style="margin-top:auto">
+                    
+                    <li class="nav-item">
+                        <a href="#" onclick="openConfigModal()" class="nav-link">
+                            <i class="ph ph-gear"></i>
+                            <span class="link-text">Configuración</span>
+                        </a>
+                        <span class="tooltip">Configuración</span>
+                    </li>
+                    <li class="nav-item" id="navUsuarios" style="display: none;">
+                        <a href="/usuarios" class="nav-link">
+                            <i class="ph ph-users"></i>
+                            <span class="link-text">Usuarios</span>
+                        </a>
+                        <span class="tooltip">Usuarios</span>
+                    </li>
+<li class="nav-item" style="margin-top:auto">
                         <a href="#" onclick="logout()" class="nav-link hover:bg-red-900/50">
                             <i class="ph ph-sign-out text-red-400"></i>
                             <span class="link-text text-red-100">Cerrar Sesión</span>
@@ -400,7 +419,7 @@
                     <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 lg:hidden">
                         <i class="ph-bold ph-list text-2xl"></i>
                     </button>
-                    <h1 class="text-xl font-bold text-gray-800">Bienvenido</h1>
+                    <h1 class="text-xl font-bold text-gray-800">Reporte Ejecutivo</h1>
                 </div>
             </header>
 
@@ -468,46 +487,22 @@
                             </div>
                         </div>
 
-                        <!-- Mes -->
-                        <div class="space-y-2">
-                            <label class="text-xs font-bold text-gray-500 uppercase">Mes</label>
-                            <div class="relative">
-                                <select id="filterMes"
-                                    class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 px-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none cursor-pointer hover:bg-gray-50">
-                                    <option value="Todos">Todos los Meses</option>
-                                    <option value="enero">Enero</option>
-                                    <option value="febrero">Febrero</option>
-                                    <option value="marzo">Marzo</option>
-                                    <option value="abril">Abril</option>
-                                    <option value="mayo">Mayo</option>
-                                    <option value="junio">Junio</option>
-                                    <option value="julio">Julio</option>
-                                    <option value="agosto">Agosto</option>
-                                    <option value="setiembre">Setiembre</option>
-                                    <option value="octubre">Octubre</option>
-                                    <option value="noviembre">Noviembre</option>
-                                    <option value="diciembre">Diciembre</option>
-                                </select>
-                                <div
-                                    class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
-                                    <i class="ph-bold ph-caret-down"></i>
-                                </div>
-                            </div>
+                        <!-- Botones de Acción (Reubicados) -->
+                        <div class="flex items-end pb-0.5 gap-2">
+                            <button onclick="generateReport()"
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition-colors flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-play"></i>
+                                Generar
+                            </button>
+                            <button onclick="downloadExcel()"
+                                class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition-colors flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-download-simple"></i>
+                                Excel
+                            </button>
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-4">
-                        <button onclick="generateReport()"
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-colors flex items-center gap-2">
-                            <i class="ph-bold ph-play"></i>
-                            Generar Reporte
-                        </button>
-                        <button onclick="downloadExcel()"
-                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-colors flex items-center gap-2">
-                            <i class="ph-bold ph-download-simple"></i>
-                            Descargar Excel
-                        </button>
-                    </div>
+
                 </div>
 
                 <!-- SUMMARY SECTION -->
@@ -570,8 +565,8 @@
                                 <li><b>Detalle de Proyectos:</b> Información completa de cada proyecto con todas las
                                     métricas.</li>
                             </ul>
-                            <p class="text-xs text-gray-500 mt-2">Nota: El archivo Excel se generará con 2 hojas:
-                                Resumen Ejecutivo y Detalle de Proyectos.</p>
+                            <p class="text-xs text-gray-500 mt-2">Nota: El archivo Excel se generará con 3 hojas:
+                                Reporte General, Análisis Histórico y Predicción.</p>
                         </div>
                     </div>
                 </div>
@@ -600,10 +595,33 @@
         }
 
         const API_URL = "/api";
-        const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
+        // Force US formatting: S/ 1,234.56
+        const formatter = {
+            format: (value) => 'S/ ' + Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        };
 
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', async () => {
+            // Set user profile details
+            const userFullName = localStorage.getItem('pronied_nombre_completo') || localStorage.getItem('pronied_user');
+            const isAdmin = localStorage.getItem('pronied_admin') === '1';
+            
+            if (isAdmin) {
+                const navUsuarios = document.getElementById('navUsuarios');
+                if (navUsuarios) navUsuarios.style.display = 'block';
+            }
+            
+            const elements = document.querySelectorAll('.user-details h4');
+            elements.forEach(el => el.innerText = userFullName);
+            
+            const roles = document.querySelectorAll('.user-details span');
+            roles.forEach(el => el.innerText = isAdmin ? 'Administrador' : 'Usuario');
+            
+            if (userFullName) {
+                const initials = document.querySelectorAll('.avatar-circle');
+                initials.forEach(el => el.innerText = userFullName.substring(0, 2).toUpperCase());
+            }
+
             // Set current date
             const now = new Date();
             document.getElementById('lastUpdateDate').innerText = now.toLocaleString();
@@ -622,40 +640,69 @@
                 });
                 const data = await response.json();
 
-                // Populate Regions (Provincias in previous context, but mapping to Region/Department here)
-                // Note: The user asked for "Region", which usually maps to Departamento.
-                // Let's assume we can get unique departments from a new endpoint or reuse logic.
-                // For simplicity in this step, I'll hardcode some or fetch if available.
-                // Ideally we should add an endpoint for unique departments.
-                // I will add a specific endpoint for filter options in backend step.
+                // 1. Populate Years (Dynamic from DB)
+                if (data.filtros_disponibles && data.filtros_disponibles.anios) {
+                    const anioSelect = document.getElementById('filterAno');
+                    anioSelect.innerHTML = '';
 
-                // For now, let's just populate Units from the existing data if available
+                    // Add "Todos" option
+                    const optTodos = document.createElement('option');
+                    optTodos.value = "Todos";
+                    optTodos.innerText = "Todos los Años";
+                    anioSelect.appendChild(optTodos);
+
+                    // Add DB years (sorted desc)
+                    const maxAnio = Math.max(...data.filtros_disponibles.anios);
+                    data.filtros_disponibles.anios.sort((a, b) => b - a).forEach(anio => {
+                        const opt = document.createElement('option');
+                        opt.value = anio;
+                        opt.innerText = anio;
+                        if (anio == maxAnio) opt.selected = true;
+                        anioSelect.appendChild(opt);
+                    });
+                }
+
+                // 2. Populate Units
                 const unitSelect = document.getElementById('filterUnidad');
-                // Clear existing options except first
                 unitSelect.innerHTML = '<option value="Todas">Todos los Rubros</option>';
-                // We can use the units from the response if they exist
-                // Or just hardcode the known ones for now: UGEO, UGM, UGME, UGRD, UGSC
-                ['UGEO', 'UGM', 'UGME', 'UGRD', 'UGSC'].forEach(u => {
-                    const opt = document.createElement('option');
-                    opt.value = u;
-                    opt.innerText = u;
-                    unitSelect.appendChild(opt);
-                });
 
-                // Populate Regions - Placeholder until backend endpoint is ready
-                const regionSelect = document.getElementById('filterRegion');
-                // We will populate this dynamically after backend update
+                if (data.unidades && data.unidades.labels) {
+                    data.unidades.labels.forEach(u => {
+                        const opt = document.createElement('option');
+                        opt.value = u;
+                        opt.innerText = u;
+                        unitSelect.appendChild(opt);
+                    });
+                } else {
+                    ['UGEO', 'UGM', 'UGME', 'UGRD', 'UGSC'].forEach(u => {
+                        const opt = document.createElement('option');
+                        opt.value = u;
+                        opt.innerText = u;
+                        unitSelect.appendChild(opt);
+                    });
+                }
             } catch (error) {
                 console.error("Error loading filters:", error);
             }
         }
 
         async function generateReport() {
-            const ano = document.getElementById('filterAno').value;
-            const unidad = document.getElementById('filterUnidad').value;
-            const mes = document.getElementById('filterMes').value;
-
             try {
+                // 1. Validate Inputs
+                const anoElem = document.getElementById('filterAno');
+                const unidadElem = document.getElementById('filterUnidad');
+
+                if (!anoElem || !unidadElem) {
+                    console.error("Faltan elementos de filtro en el DOM");
+                    return;
+                }
+
+                const ano = anoElem.value;
+                const unidad = unidadElem.value;
+                const mes = "Todos"; // Hardcoded default since UI filter was removed
+
+                console.log("Generando reporte con:", { ano, unidad, mes });
+
                 const response = await fetch(`${API_URL}/reporte-ejecutivo/resumen`, {
                     method: 'POST',
                     headers: {
@@ -665,26 +712,36 @@
                     body: JSON.stringify({ ano, unidad, mes })
                 });
 
-                if (!response.ok) throw new Error("Error al generar reporte");
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error ${response.status}: ${errorText}`);
+                }
 
                 const data = await response.json();
 
+                // 2. Update UI
                 document.getElementById('summaryCount').innerText = data.total_registros;
                 document.getElementById('summaryPim').innerText = formatter.format(data.total_pim);
                 document.getElementById('summaryDevengado').innerText = formatter.format(data.total_devengado);
                 document.getElementById('generatedTime').innerText = new Date().toLocaleString();
 
             } catch (error) {
-                alert("Error: " + error.message);
+                console.error("Error en generateReport:", error);
+                alert("Error al generar reporte: " + error.message);
             }
         }
 
         async function downloadExcel() {
-            const ano = document.getElementById('filterAno').value;
-            const unidad = document.getElementById('filterUnidad').value;
-            const mes = document.getElementById('filterMes').value;
-
             try {
+                const anoElem = document.getElementById('filterAno');
+                const unidadElem = document.getElementById('filterUnidad');
+
+                if (!anoElem || !unidadElem) return;
+
+                const ano = anoElem.value;
+                const unidad = unidadElem.value;
+                const mes = "Todos";
+
                 // Construct query params
                 const params = new URLSearchParams({
                     ano: ano,
@@ -692,26 +749,279 @@
                     mes: mes
                 });
 
-                const response = await fetch(`${API_URL}/reporte-ejecutivo/download?${params.toString()}`, {
+                const url = `${API_URL}/reporte-ejecutivo/download?${params.toString()}`;
+                const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (!response.ok) throw new Error("Error al descargar Excel");
 
                 const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
+                const downloadUrl = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url;
-                a.download = `Reporte_Ejecutivo_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                a.href = downloadUrl;
+                a.download = `Reporte_Ejecutivo_${ano}_${new Date().toISOString().slice(0, 10)}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
-                window.URL.revokeObjectURL(url);
+                window.URL.revokeObjectURL(downloadUrl);
 
             } catch (error) {
+                console.error("Error en downloadExcel:", error);
                 alert("Error: " + error.message);
             }
         }
     </script>
+
+    <!-- --- VENTANA MODAL: CONFIGURACIÓN REPORTE SEMANAL --- -->
+    <div id="configModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="closeConfigModal()"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto transform transition-all scale-95">
+            <div class="modal-content py-4 text-left px-6">
+                <!-- Título Modal -->
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <div>
+                        <p class="text-xl font-bold text-gray-800"><i class="ph-bold ph-gear text-indigo-600"></i> Configuración de Correos</p>
+                    </div>
+                    <button onclick="closeConfigModal()" class="cursor-pointer z-50 text-gray-500 hover:text-red-500 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Cuerpo -->
+                <div class="my-5 space-y-6">
+                    
+                    <!-- Sección 1: Reporte Semanal -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-envelope-simple text-indigo-600"></i> Reporte Semanal (HU011)</h3>
+                        <p class="text-sm text-gray-600">Resumen semanal automático para la gerencia.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-gray-50 p-3 rounded">
+                            <input type="checkbox" id="configActivo" class="w-5 h-5 text-indigo-600 rounded cursor-pointer">
+                            <label for="configActivo" class="font-bold text-gray-700 cursor-pointer">Activar envío de reporte</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Día de la semana</label>
+                            <select id="configDia" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                <option value="mon">Lunes</option>
+                                <option value="tue">Martes</option>
+                                <option value="wed">Miércoles</option>
+                                <option value="thu">Jueves</option>
+                                <option value="fri">Viernes</option>
+                                <option value="sat">Sábado</option>
+                                <option value="sun">Domingo</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="configHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="configMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 2: Alerta de Retrasos Críticos -->
+                    <div class="space-y-4 pt-2">
+                        <h3 class="font-bold text-gray-800 border-b pb-1"><i class="ph-bold ph-warning-circle text-red-500"></i> Alertas de Retraso Crítico (HU004)</h3>
+                        <p class="text-sm text-gray-600">Alerta de unidades gerenciales por debajo del 80%.</p>
+                        
+                        <div class="flex items-center gap-2 mb-4 bg-red-50 p-3 rounded">
+                            <input type="checkbox" id="alertaActivo" class="w-5 h-5 text-red-600 rounded cursor-pointer">
+                            <label for="alertaActivo" class="font-bold text-red-700 cursor-pointer">Activar alertas de retraso</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Días de Evaluación</label>
+                            <div class="flex gap-2" id="alertaDiasContainer">
+                                <button type="button" data-day="mon" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">L</button>
+                                <button type="button" data-day="tue" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">M</button>
+                                <button type="button" data-day="wed" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">X</button>
+                                <button type="button" data-day="thu" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">J</button>
+                                <button type="button" data-day="fri" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">V</button>
+                                <button type="button" data-day="sat" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">S</button>
+                                <button type="button" data-day="sun" onclick="toggleDayBtn(this)" class="day-btn w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer">D</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora (24h)</label>
+                                <select id="alertaHora" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Minutos</label>
+                                <select id="alertaMinuto" class="w-full bg-white border border-gray-300 text-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500 shadow-sm cursor-pointer">
+                                    <option value="00">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="39">39</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Modal -->
+                <div class="flex justify-end pt-4 border-t gap-2">
+                    <button onclick="closeConfigModal()" class="px-5 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 font-medium transition text-sm">Cancelar</button>
+                    <button onclick="saveConfig()" class="px-5 py-2 bg-indigo-600 rounded-lg text-white hover:bg-indigo-700 font-medium transition shadow text-sm flex items-center gap-2"><i class="fa-solid fa-save"></i> Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LÓGICA DE CONFIGURACIÓN (HU011 y HU004) ---
+        async function openConfigModal() {
+            const selectHora = document.getElementById('configHora');
+            const alertaHora = document.getElementById('alertaHora');
+            if (selectHora.options.length === 0) {
+                for (let i = 0; i < 24; i++) {
+                    const h = i.toString().padStart(2, '0');
+                    selectHora.add(new Option(h + ":00", h));
+                    alertaHora.add(new Option(h + ":00", h));
+                }
+            }
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                
+                // Fetch both configurations in parallel
+                const [resReporte, resAlerta] = await Promise.all([
+                    fetch('/api/config-reportes', { headers: {'Authorization': `Bearer ${token}`} }),
+                    fetch('/api/config-alertas', { headers: {'Authorization': `Bearer ${token}`} })
+                ]);
+
+                if (resReporte.ok) {
+                    const data = await resReporte.json();
+                    document.getElementById('configDia').value = data.dia_semana;
+                    document.getElementById('configHora').value = data.hora;
+                    
+                    let minSelect = document.getElementById('configMinuto');
+                    let found = Array.from(minSelect.options).some(o => o.value === data.minuto);
+                    if(!found) minSelect.add(new Option(data.minuto, data.minuto));
+                    minSelect.value = data.minuto;
+                    
+                    document.getElementById('configActivo').checked = data.activo;
+                }
+
+                if (resAlerta.ok) {
+                    const dataAlerta = await resAlerta.json();
+                    
+                    const daysStr = dataAlerta.dia_semana || "*";
+                    const daysArray = daysStr === "*" ? ["mon","tue","wed","thu","fri","sat","sun"] : daysStr.split(",");
+                    
+                    document.querySelectorAll('#alertaDiasContainer .day-btn').forEach(btn => {
+                        const isSelected = daysArray.includes(btn.dataset.day);
+                        if (isSelected) {
+                            btn.classList.add('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        } else {
+                            btn.classList.remove('selected', 'border-red-400', 'bg-red-50', 'text-red-600');
+                            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                        }
+                    });
+
+                    document.getElementById('alertaHora').value = dataAlerta.hora;
+                    
+                    let minSelectAlerta = document.getElementById('alertaMinuto');
+                    let foundAlerta = Array.from(minSelectAlerta.options).some(o => o.value === dataAlerta.minuto);
+                    if(!foundAlerta) minSelectAlerta.add(new Option(dataAlerta.minuto, dataAlerta.minuto));
+                    minSelectAlerta.value = dataAlerta.minuto;
+                    
+                    document.getElementById('alertaActivo').checked = dataAlerta.activo;
+                }
+
+            } catch(e) {
+                console.error("Error cargando config", e);
+            }
+
+            const modal = document.getElementById('configModal');
+            document.body.classList.add('modal-active');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-95');
+            modal.querySelector('.modal-container').classList.add('scale-100');
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('configModal');
+            document.body.classList.remove('modal-active');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('.modal-container').classList.remove('scale-100');
+            modal.querySelector('.modal-container').classList.add('scale-95');
+        }
+
+        function toggleDayBtn(btn) {
+            btn.classList.toggle('selected');
+            if (btn.classList.contains('selected')) {
+                btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.add('border-red-400', 'bg-red-50', 'text-red-600');
+            } else {
+                btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                btn.classList.remove('border-red-400', 'bg-red-50', 'text-red-600');
+            }
+        }
+
+        async function saveConfig() {
+            const payloadReporte = {
+                dia_semana: document.getElementById('configDia').value,
+                hora: document.getElementById('configHora').value,
+                minuto: document.getElementById('configMinuto').value,
+                activo: document.getElementById('configActivo').checked
+            };
+
+            const selectedBtns = document.querySelectorAll('#alertaDiasContainer .day-btn.selected');
+            const selectedDays = Array.from(selectedBtns).map(btn => btn.dataset.day);
+            const alertaDiaValue = selectedDays.length === 7 ? "*" : (selectedDays.length === 0 ? "none" : selectedDays.join(","));
+
+            if (selectedDays.length === 0 && document.getElementById('alertaActivo').checked) {
+                alert("Debe seleccionar al menos un día para las alertas si están activas.");
+                return;
+            }
+
+            const payloadAlerta = {
+                dia_semana: alertaDiaValue,
+                hora: document.getElementById('alertaHora').value,
+                minuto: document.getElementById('alertaMinuto').value,
+                activo: document.getElementById('alertaActivo').checked
+            };
+
+            try {
+                const token = localStorage.getItem('pronied_token');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+
+                const [resRep, resAle] = await Promise.all([
+                    fetch('/api/config-reportes', { method: 'POST', headers, body: JSON.stringify(payloadReporte) }),
+                    fetch('/api/config-alertas', { method: 'POST', headers, body: JSON.stringify(payloadAlerta) })
+                ]);
+                
+                if (resRep.ok && resAle.ok) {
+                    alert("¡Configuración guardada exitosamente!");
+                    closeConfigModal();
+                } else {
+                    alert("Error guardando la configuración.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión con el servidor.");
+            }
+        }
+    </script>
 </body>
+
 
 </html>
