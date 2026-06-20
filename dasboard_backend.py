@@ -215,8 +215,43 @@ def create_engine_connection():
     """Returns the singleton engine instance."""
     return engine
 
+def migrate_from_csv():
+    import os
+    import pandas as pd
+    from sqlalchemy import inspect
+    
+    csv_dir = "migration_data"
+    if not os.path.exists(csv_dir):
+        return
+        
+    tablas = ['usuarios', 'ejecucion_financiera', 'control_cambios', 'configuracion_reportes', 'configuracion_alertas']
+    
+    try:
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        
+        with engine.connect() as conn:
+            for tabla in tablas:
+                csv_path = os.path.join(csv_dir, f"{tabla}.csv")
+                if not os.path.exists(csv_path):
+                    continue
+                    
+                # Si la tabla ya existe y tiene datos, no sobreescribir
+                if tabla in existing_tables:
+                    count = conn.execute(text(f"SELECT COUNT(*) FROM {tabla}")).scalar()
+                    if count > 0:
+                        continue
+                        
+                print(f"Migrando {tabla} desde CSV...")
+                df = pd.read_csv(csv_path)
+                df.to_sql(tabla, conn, if_exists='append', index=False)
+                print(f"Tabla {tabla} poblada con {len(df)} registros.")
+    except Exception as e:
+        print(f"Error en migracion CSV: {e}")
+
 def setup_database_triggers():
     """Configura la tabla de control de cambios y triggers en la BD."""
+    migrate_from_csv()
     return
     try:
         with engine.connect() as conn:
