@@ -13,3 +13,6 @@ passlib[bcrypt]
 gunicorn
 psycopg2-binary
 xgboost
+openai
+matplotlib
+apscheduler
