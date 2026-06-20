@@ -12,6 +12,7 @@ import xgboost as xgb
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 import bcrypt
+from functools import lru_cache
 import calendar
 import os
 import io
@@ -211,7 +212,13 @@ engine = create_engine(
     pool_pre_ping=True, 
     pool_size=10, 
     max_overflow=20,
-    connect_args={'connect_timeout': 5}
+    connect_args={
+        'connect_timeout': 5,
+        'keepalives': 1,
+        'keepalives_idle': 60,
+        'keepalives_interval': 10,
+        'keepalives_count': 5
+    }
 )
 
 def create_engine_connection():
@@ -1133,6 +1140,7 @@ def enviar_resumen_semanal_h011(username):
         except Exception as e:
             print(f"⚠️ [H011] Error enviando correo a {dest}: {e}")
 
+@lru_cache(maxsize=10)
 def entrenar_y_predecir(unidad_filtro=None, flag_alerta=False):
     df = df_global.copy()
     
@@ -1203,9 +1211,9 @@ def entrenar_y_predecir(unidad_filtro=None, flag_alerta=False):
     # Entrenar Modelo
     features = ['anio', 'mes', 'pim_total', 'compromiso_pct_mes', 'devengado_anterior_pct', 'pct_avance_previo', 'saldo_restante_pct', 'unidad_encoded', 'es_trimestre_cierre', 'es_pandemia', 'presion_gasto']
     
-    # 1. Definir los Modelos Base (Tuning de Hiperparámetros)
-    rf_proto = RandomForestRegressor(n_estimators=150, max_depth=10, min_samples_leaf=2, random_state=42)
-    xgb_proto = xgb.XGBRegressor(n_estimators=150, max_depth=5, learning_rate=0.05, random_state=42, objective='reg:squarederror')
+    # 1. Definir los Modelos Base (Tuning de Hiperparámetros) - Reducidos para evitar Timeout (504)
+    rf_proto = RandomForestRegressor(n_estimators=20, max_depth=5, min_samples_leaf=2, random_state=42, n_jobs=-1)
+    xgb_proto = xgb.XGBRegressor(n_estimators=20, max_depth=3, learning_rate=0.1, random_state=42, objective='reg:squarederror', n_jobs=-1)
     
     # 2. Crear el Ensamble Multimodelo (Voting Regressor)
     # Combina el promedio ponderado de ambos cerebros para tener más precisión
