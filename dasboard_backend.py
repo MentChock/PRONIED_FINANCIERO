@@ -199,11 +199,7 @@ MESES_SUFIJOS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
 # Global Database Configuration & Engine (Singleton)
 import os
 DB_CONNECTION_URL = os.getenv("DB_CONNECTION_URL", (
-    "mssql+pyodbc://sa:Qazokm2015.@127.0.0.1:1433/PRONIED_FINANCIERO"
-    "?driver=ODBC+Driver+18+for+SQL+Server"
-    "&TrustServerCertificate=yes"
-    "&Encrypt=no"
-    "&LoginTimeout=60"
+    "postgresql+psycopg2://proniedadmin:Qazokm2020$$@pronied-db-server.postgres.database.azure.com:5432/postgres"
 ))
 
 # Initialize Singleton Engine with Connection Pooling
@@ -220,6 +216,7 @@ def create_engine_connection():
 
 def setup_database_triggers():
     """Configura la tabla de control de cambios y triggers en la BD."""
+    return
     try:
         with engine.connect() as conn:
             # 1. Crear tabla de control si no existe
