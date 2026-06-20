@@ -9,7 +9,7 @@ xlsxwriter
 openpyxl
 python-multipart
 python-jose[cryptography]
-passlib[bcrypt]
+bcrypt
 gunicorn
 psycopg2-binary
 xgboost
