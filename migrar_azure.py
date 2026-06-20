@@ -6,9 +6,8 @@ from sqlalchemy import create_engine
 LOCAL_DB_URL = "mssql+pyodbc://sa:Qazokm2015.@127.0.0.1:1433/PRONIED_FINANCIERO?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes&Encrypt=no&LoginTimeout=60"
 local_engine = create_engine(LOCAL_DB_URL)
 
-# 2. CONEXIÓN AZURE (Reemplaza esto con los datos que te dé Azure cuando crees la Web App + Database)
-# EJEMPLO: "mssql+pyodbc://tu_usuario:tu_contraseña@tu_servidor.database.windows.net:1433/PRONIED_FINANCIERO?driver=ODBC+Driver+18+for+SQL+Server"
-AZURE_DB_URL = "PEGAR_AQUI_TU_CONEXION_DE_AZURE"
+# 2. CONEXIÓN AZURE 
+AZURE_DB_URL = "postgresql+psycopg2://proniedadmin:Qazokm2020$$@pronied-db-server.postgres.database.azure.com:5432/postgres"
 
 def migrar_base_de_datos():
     if AZURE_DB_URL == "PEGAR_AQUI_TU_CONEXION_DE_AZURE":
